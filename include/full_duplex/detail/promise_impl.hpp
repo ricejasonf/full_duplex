@@ -20,10 +20,47 @@ namespace full_duplex::detail {
     struct async_tag { };
 
     template <typename Fn>
-    struct async {
+    struct async_t {
         using hana_tag = async_tag;
 
         Fn fn;
+    };
+
+    template <typename AsyncFn>
+    struct async_handler {
+        AsyncFn f;
+
+        template <typename ResolveFn, typename Input>
+        constexpr void operator()(ResolveFn&& resolve, Input&& input) const
+        {
+            if constexpr(hana::is_a<terminate, Input>) {
+                std::forward<ResolveFn>(resolve)(terminate{});
+            }
+            else if constexpr(hana::is_a<error_tag, Input>) {
+                std::forward<ResolveFn>(resolve)(std::forward<Input>(input));
+            }
+            else {
+                f(std::forward<ResolveFn>(resolve), std::forward<Input>(input));
+            }
+        }
+    };
+
+    template <typename AsyncFn>
+    struct async_error_handler {
+        AsyncFn f;
+
+        template <typename ResolveFn, typename Input>
+        constexpr void operator()(ResolveFn&& resolve, Input&& input) const {
+            if constexpr(hana::is_a<terminate, Input>) {
+                std::forward<ResolveFn>(resolve)(terminate{});
+            }
+            else if constexpr(hana::is_a<error_tag, Input>) {
+                f(std::forward<ResolveFn>(resolve), std::forward<Input>(input));
+            }
+            else {
+                std::forward<ResolveFn>(resolve)(std::forward<Input>(input));
+            }
+        }
     };
 
     //
@@ -36,5 +73,58 @@ namespace full_duplex::detail {
         using hana_tag = pmap_tag;
 
         Fn fn;
+    };
+
+    template <typename F>
+    struct pmap_handler {
+        F f;
+
+        template <typename Input>
+        constexpr auto operator()(Input&& input) const {
+            if constexpr(hana::is_a<terminate, Input>) {
+                return terminate{};
+            }
+            else if constexpr(hana::is_a<error_tag, Input>) {
+                return std::forward<Input>(input);
+            }
+            else {
+                return f(std::forward<Input>(input));
+            }
+        }
+    };
+
+    template <typename F>
+    struct pmap_error_handler {
+        F f;
+
+        template <typename Input>
+        constexpr auto operator()(Input&& input) const {
+            if constexpr(hana::is_a<terminate, Input>) {
+                return terminate{};
+            }
+            else if constexpr(hana::is_a<error_tag, Input>) {
+                return f(std::forward<Input>(input));
+            }
+            else {
+                return std::forward<Input>(input);
+            }
+        }
+    };
+
+    template <typename F>
+    struct catch_error_handler {
+        F f;
+
+        template <typename ResolveFn, typename Input>
+        constexpr void operator()(ResolveFn&& resolve, Input&& input) const {
+            // uses libc++ impl details FIXME
+            if constexpr(std::__invokable<F, Input>::value) {
+                f(std::forward<Input>(input));
+                std::forward<ResolveFn>(resolve)(terminate{});
+            }
+            else {
+                return std::forward<Input>(input);
+            }
+        }
     };
 }
