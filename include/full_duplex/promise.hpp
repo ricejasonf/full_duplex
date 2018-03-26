@@ -38,16 +38,14 @@ namespace full_duplex::detail {
 
 namespace full_duplex {
     template <typename AsyncFn>
-    constexpr auto promise_fn::operator()(AsyncFn&& f) const {
-        // TODO wrap in overloads to handle error types
-        auto impl = detail::async_t{std::forward<AsyncFn>(f))};
+    constexpr auto promise_fn::operator()(AsyncFn&& fn) const {
+        auto impl = detail::async_t{std::forward<AsyncFn>(fn))};
         return detail::promise_t<decltype(impl)>{impl};
     }
 
-    template <typename F>
-    constexpr auto pmap_fn::operator()(F&& f) const {
-        // TODO wrap in overloads to handle error types
-        auto impl = pmap_t{std::forward<F>(f)};
+    template <typename Fn>
+    constexpr auto pmap_fn::operator()(Fn&& fn) const {
+        auto impl = pmap_t{std::forward<Fn>(fn)};
         return detail::promise_t<decltype(impl)>{impl};
     }
 }
@@ -58,9 +56,9 @@ namespace boost::hana
 
     template <>
     struct transform_impl<full_duplex::promise_tag> {
-        template <typename Promise, typename F>
-        static constexpr auto apply(Promise&& p, F&& f) {
-            auto impl = pmap_t{std::forward<F>(f)};
+        template <typename Promise, typename Fn>
+        static constexpr auto apply(Promise&& p, Fn&& fn) {
+            auto impl = pmap_t{std::forward<Fn>(fn)};
             return hana::chain(
                 std::forward<Promise>(p),
                 detail::promise_t<decltype(impl)>{std::move(impl)}
@@ -93,9 +91,9 @@ namespace boost::hana
             }
         }
 
-        template <typename M, typename F>
-        static constexpr auto apply(M&& m, F&& f) {
-            auto impl = hana::concat(wrap(std::forward<M>(m).impl), wrap(std::forward<F>(f)));
+        template <typename M, typename Fn>
+        static constexpr auto apply(M&& m, Fn&& fn) {
+            auto impl = hana::concat(wrap(std::forward<M>(m).impl), wrap(std::forward<Fn>(fn)));
 
             return detail::promise_t<declype(impl)>{std::move(impl)};
         }
