@@ -58,7 +58,7 @@ namespace boost::hana
     struct transform_impl<full_duplex::promise_tag> {
         template <typename Promise, typename Fn>
         static constexpr auto apply(Promise&& p, Fn&& fn) {
-            auto impl = pmap_t{std::forward<Fn>(fn)};
+            auto impl = full_duplex::map_raw({std::forward<Fn>(fn)};
             return hana::chain(
                 std::forward<Promise>(p),
                 detail::promise_t<decltype(impl)>{std::move(impl)}
@@ -72,8 +72,10 @@ namespace boost::hana
     struct lift_impl<full_duplex::promise_tag> {
         template <typename X>
         static constexpr auto apply(X&& x) {
-            auto ret = hana::always(std::forward<X>(x));
-            return promise([ret{std::move(ret)}](auto& resolve, auto&&) { resolve(ret()); });
+            auto holder = detail::holder<std::decay_t<X>>(std::forward<X>(x));
+            return promise([holder{std::move(holder)}](auto& resolve, auto&&) {
+                resolve(ret.value);
+            });
         }
     };
 
@@ -93,7 +95,10 @@ namespace boost::hana
 
         template <typename M, typename Fn>
         static constexpr auto apply(M&& m, Fn&& fn) {
-            auto impl = hana::concat(wrap(std::forward<M>(m).impl), wrap(std::forward<Fn>(fn)));
+            auto impl = hana::concat(
+                wrap(std::forward<M>(m).impl),
+                wrap(make_lazy_promise_storage(std::forward<Fn>(fn)))
+            );
 
             return detail::promise_t<declype(impl)>{std::move(impl)};
         }

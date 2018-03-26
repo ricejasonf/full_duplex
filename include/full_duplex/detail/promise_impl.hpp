@@ -22,7 +22,6 @@ namespace full_duplex::detail {
     template <typename AsyncFn>
     struct async_raw_handler {
         using hana_tag = async_tag;
-
         AsyncFn fn;
 
         template <typename ResolveFn, typename Input>
@@ -66,6 +65,22 @@ namespace full_duplex::detail {
             else {
                 std::forward<ResolveFn>(resolve)(std::forward<Input>(input));
             }
+        }
+    };
+
+    //
+    // lazy_async - used to lazily construct a lazy_holder since it is not copyable
+    //
+
+    struct lazy_async_tag { };
+
+    template <typename Fn>
+    struct lazy_async {
+        using hana_tag = lazy_async_tag
+        Fn fn;
+
+        lazy_holder<Fn> construct() {
+            return {fn};
         }
     };
 
