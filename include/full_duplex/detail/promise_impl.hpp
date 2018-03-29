@@ -79,8 +79,8 @@ namespace full_duplex::detail {
         using hana_tag = lazy_async_tag
         Fn fn;
 
-        lazy_holder<Fn> construct() {
-            return {fn};
+        lazy_holder_async_fn<Fn> construct() {
+            return lazy_holder_async_fn<Fn>(fn);
         }
     };
 

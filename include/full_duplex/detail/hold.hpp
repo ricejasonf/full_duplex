@@ -29,62 +29,94 @@ namespace full_duplex::detail {
     };
 
     constexpr auto make_holder = [](auto&& fn) {
-        return holder<std::decay_t<decltype(fn)>(std::forward<decltype(fn)>(fn));
+        return holder<std::decay_t<decltype(fn)>(std::forward<decltype(fn)>(fn))>{};
     };
 
     //
     // lazy_holder
     //
 
-    template <typename Fn>
-    struct lazy_holder_function {
-      Fn fn;
-    };
-
-    template <typename Fn, typename T>
+    template <typename T>
     struct lazy_holder
-      : lazy_holder_function<Fn>
     {
-        lazy_holder(Fn fn)
-            : lazy_holder_function<Fn>{std::move(fn)}
+        lazy_holder()
+            : engaged(false)
             , null_state()
-            , engaged(false)
         { }
 
-        // The move constructor default initializes
-        // the value because it is assumed the instance
-        // is settled after the promise is initialized
-        // (ie it is never moved once `value` is set)
-        lazy_holder(lazy_holder&& old)
-            : lazy_holder_function<Fn>{std::move(old.fn)}
+        lazy_holder(lazy_holder const& old)
+            : engaged(old.engaged)
             , null_state()
-            , engaged(false)
         {
-            assert(!old.engaged);
+            if (old.engaged) {
+                new(std::addressof(value)) T(old.value);
+            }
+        }
+
+        lazy_holder(lazy_holder&& old)
+            : engaged(old.engaged)
+            , null_state()
+        {
+            if (old.engaged) {
+                new(std::addressof(value)) T(std::move(old.value));
+            }
         }
 
         ~lazy_holder() {
-            if (engaged)
-            {
+            if (old.engaged) {
                 value.~T();
             }
         }
 
-        template <typename Resolver, typename ...Xs>
-        void operator()(Resolver& resolver, Xs&& ...xs) noexcept {
-          new(std::addressof(value)) T(this->fn(resolver, std::forward<Xs>(xs)...));
-          engaged = true;
+        template <typename X>
+        void assign(X&& x) {
+            new(std::addressof(value)) T(std::forward<X>(x));
+            engaged = true;
         }
 
-        private:
+        inline bool is_engaged()
+        { return engaged; }
 
+        inline T const& force_get()
+        { return value; }
+
+    protected:
+
+        bool engaged;
         union {
             char null_state;
             T value;
         };
-
-        bool engaged;
     };
+
+    template <typename Fn>
+    struct lazy_holder_function
+    {
+        Fn fn;
+    };
+
+    //
+    // lazy_holder_async_fn
+    //
+
+    template <typename Fn>
+    struct lazy_holder_async_fn
+        : lazy_holder_function<Fn>
+        , lazy_holder<T>
+    {
+        template <typename FnArg>
+        lazy_holder_async_fn(FnArg&& fn_arg)
+            : lazy_holder_function(std::forward<FnArg>(fn_arg))
+            , lazy_holder<T>()
+        { }
+
+        template <typename Resolver, typename Input>
+        void operator()(ResolveFn& resolve, Input&& input) noexcept {
+            new(std::addressof(value)) T(this->fn(resolve, std::forward<Input>(input)));
+            engaged = true;
+        }
+    };
+
 
     constexpr auto has_return_type = hana::is_valid([](auto const& fn)
         -> ct::return_type_t<decltype(fn)>

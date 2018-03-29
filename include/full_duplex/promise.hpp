@@ -29,6 +29,7 @@ namespace full_duplex::detail {
 
         template <typename Input>
         auto operator()(Input&& input) noexcept {
+            // TODO
             // fold promise and use future to
             // return a promise object
             // but the chain function can optimize this
@@ -40,12 +41,6 @@ namespace full_duplex {
     template <typename AsyncFn>
     constexpr auto promise_fn::operator()(AsyncFn&& fn) const {
         auto impl = detail::async_t{std::forward<AsyncFn>(fn))};
-        return detail::promise_t<decltype(impl)>{impl};
-    }
-
-    template <typename Fn>
-    constexpr auto pmap_fn::operator()(Fn&& fn) const {
-        auto impl = pmap_t{std::forward<Fn>(fn)};
         return detail::promise_t<decltype(impl)>{impl};
     }
 }
