@@ -32,18 +32,44 @@ namespace full_duplex::detail {
         }
     };
 
-    template <typename InputPromise>
+    template <typename Holder>
+    struct promise_loop_tail {
+        using hana_tag = promise_tag;
+
+        Holder* holder;
+
+        promise_loop_tail(Holder* e)
+            : holder(e)
+        { }
+
+        template <typename Input>
+        void operator()(Input const&) {
+            static_assert(not hana::is_an<error_tag, Input>, "Unhandled Promise Error!");
+
+            if constexpr(hana::is_a<terminate, Input>)
+            {
+                delete holder;
+            }
+            else
+            {
+                // start the promise over again
+                holder->promise_sum(void_input);
+            }
+        }
+    };
+
+    template <typename InputPromise, typename Tail>
     struct promise_sum_holder
     {
         using PromiseSum = decltype(detail::promise_join(
             std::declval<InputPromise>(),
-            std::declval<promise_tail<promise_sum_holder>>()
+            std::declval<Tail<promise_sum_holder>>()
         ));
 
         PromiseSum promise_sum;
 
         promise_sum_holder(InputPromise&& p)
-            : promise_sum(promise_join(std::move(p), promise_tail<promise_sum_holder>(this)))
+            : promise_sum(promise_join(std::move(p), Tail<promise_sum_holder>(this)))
         { }
 
         promise_sum_holder(promise_sum_holder const&) = delete;
@@ -55,7 +81,17 @@ namespace full_duplex {
     template <typename ...Xs>
     do_fn::operator()(Xs&&... xs) const {
         using Promise = promise_t<decltype(hana::make_basic_tuple(std::forward<Xs&&>(xs)...))>;
-        auto p = promise_sum_holder<Promise>{
+        auto p = promise_sum_holder<Promise, promise_tail>{
+            Promise{hana::make_basic_tuple(std::forward<Xs&&>(xs)...)}
+        };
+
+        p(void_input);
+    }
+
+    template <typename ...Xs>
+    do_loop_fn::operator()(Xs&&... xs) const {
+        using Promise = promise_t<decltype(hana::make_basic_tuple(std::forward<Xs&&>(xs)...))>;
+        auto p = promise_sum_holder<Promise, promise_loop_tail>{
             Promise{hana::make_basic_tuple(std::forward<Xs&&>(xs)...)}
         };
 

@@ -15,6 +15,13 @@ namespace full_duplex {
 
     constexpr do_fn do_{};
 
+    struct do_loop_fn {
+        template <typename ...Xs>
+        constexpr auto operator()(Xs&& ...xs) const;
+    };
+
+    constexpr do_loop_fn do_loop{};
+
     // void_input - tag used as placeholder for initial input
 
     struct void_input_t { };
