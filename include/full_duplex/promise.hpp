@@ -4,10 +4,11 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef FULL_DUPLEX_ASYNC_HPP
-#define FULL_DUPLEX_ASYNC_HPP
+#ifndef FULL_DUPLEX_PROMISE_HPP
+#define FULL_DUPLEX_PROMISE_HPP
 
 #include <full_duplex/fwd/promise.hpp>
+#include <full_duplex/map.hpp>
 
 #include <boost/hana/basic_tuple.hpp>
 #include <boost/hana/fwd/chain.hpp>
@@ -16,23 +17,27 @@
 #include <boost/hana/functional/compose.hpp>
 #include <boost/hana/functional/id.hpp>
 #include <boost/hana/functional/overload_linearly.hpp>
+#include <functional>
 
 namespace full_duplex::detail {
-    template <typename Impl, typename = void>
-    struct promise_t;
-
     template <typename Impl>
-    struct promise_t<Impl, std::enable_if_t<hana::is_a<basic_tuple_tag, Impl>>> {
+    struct promise_t<Impl> {
         using hana_tag = promise_tag;
 
         Impl impl;
 
         template <typename Input>
         auto operator()(Input&& input) noexcept {
-            // TODO
-            // fold promise and use future to
-            // return a promise object
-            // but the chain function can optimize this
+            using T = std::decay_t<Input>;
+            holder<T>{std::forward<Input>(input)};
+
+            return promise([holder, this](auto& resolve, auto&&) {
+                do_(
+                    promise(std::move(holder)),
+                    *this,
+                    tap(std::ref(resolve))
+                );
+            });
         }
     };
 } 
@@ -67,10 +72,7 @@ namespace boost::hana
     struct lift_impl<full_duplex::promise_tag> {
         template <typename X>
         static constexpr auto apply(X&& x) {
-            auto holder = detail::holder<std::decay_t<X>>(std::forward<X>(x));
-            return promise([holder{std::move(holder)}](auto& resolve, auto&&) {
-                resolve(ret.value);
-            });
+            return promise(detail::holder<std::decay_t<X>>(std::forward<X>(x)));
         }
     };
 

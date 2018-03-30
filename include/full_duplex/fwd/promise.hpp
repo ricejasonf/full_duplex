@@ -11,8 +11,8 @@ namespace full_duplex {
     struct promise_tag { };
 
     struct promise_fn {
-        template <typename F>
-        auto operator()(F&& f) const;
+        template <typename AsyncFn>
+        auto operator()(AsyncFn&&) const;
     };
 
     constexpr promise_fn promise{};

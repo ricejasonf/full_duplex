@@ -7,15 +7,11 @@
 #ifndef FULL_DUPLEX_FUTURE_HPP
 #define FULL_DUPLEX_FUTURE_HPP
 
-#include <full_duplex/fwd/promise.hpp>
+#include <full_duplex/fwd/future.hpp>
 
-#include <boost/hana/basic_tuple.hpp>
-#include <boost/hana/fwd/chain.hpp>
-#include <boost/hana/fwd/lift.hpp>
 #include <boost/hana/fwd/transform.hpp>
 #include <boost/hana/functional/compose.hpp>
 #include <boost/hana/functional/id.hpp>
-#include <boost/hana/functional/overload_linearly.hpp>
 
 namespace full_duplex::detail {
     template <typename Fn>
@@ -25,7 +21,7 @@ namespace full_duplex::detail {
 }
 
 namespace full_duplex {
-    template <typename T, typename Transform>
+    template <typename T, typename Transform = hana::id_t>
     struct future_t<T, Transform>
         : future_transform_function<Transform>
     {

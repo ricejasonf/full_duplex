@@ -13,19 +13,33 @@
 namespace full_duplex {
     template <typename Fn>
     constexpr auto map_fn::operator()(Fn&& fn) const {
-        return pmap_handler<std::decay_t<Fn>>{std::forward<Fn>(fn)};
+        using T = pmap_handler<std::decay_t<Fn>>;
+        return promise<T>{T{std::forward<Fn>(fn)}};
     }
 
     constexpr auto map_error_fn::operator()(Fn&& fn) const {
-        return pmap_error_handler<std::decay_t<Fn>>{std::forward<Fn>(fn)};
+        using T = pmap_error_handler<std::decay_t<Fn>>;
+        return promise<T>{T{std::forward<Fn>(fn)}};
     }
 
     constexpr auto map_raw_fn::operator()(Fn&& fn) const {
-        return pmap_raw_handler<std::decay_t<Fn>>{std::forward<Fn>(fn)};
+        using T = pmap_raw_handler<std::decay_t<Fn>>;
+        return promise<T>{T{std::forward<Fn>(fn)}};
     }
 
     constexpr auto catch_error_fn::operator()(Fn&& fn) const {
-        return catch_handler<std::decay_t<Fn>>{std::forward<Fn>(fn)};
+        using T = catch_handler<std::decay_t<Fn>>;
+        return promise<T>{T{std::forward<Fn>(fn)}};
+    }
+
+    constexpr auto tap_fn::operator()(Fn&& fn) const {
+        auto fn_ = hana::capture()(std::forward<Fn>(fn));
+        constexpr auto tap_helper = [fn_{std::move(fn_)}](auto&& input) {
+            fn_(input);
+            return std::forward<decltype(input)>(input);
+        }
+        using T = pmap_handler<decltype(tap_helper)>;
+        return promise<T>{T{tap_helper}};
     }
 }
 

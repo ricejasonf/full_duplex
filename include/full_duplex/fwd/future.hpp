@@ -10,8 +10,11 @@
 namespace full_duplex {
     struct future_tag { }
 
-    template <typename ...>
-    struct future_t<...>;
+    template <typename T, typename ...>
+    struct future_t;
+
+    template <typename T, typename ...>
+    struct shared_future_t;
 
     // unresolved
 
