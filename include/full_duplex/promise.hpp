@@ -100,6 +100,22 @@ namespace boost::hana
             return detail::promise_t<declype(impl)>{std::move(impl)};
         }
     };
+
+    // Comparable - does not wait for asyncronous operations
+
+    template <>
+    struct equal_impl<full_duplex::promise_tag, full_duplex::promise_tag> {
+        template <typename Px, typename Py>
+        static bool apply(Px const& px, Py const& py) {
+            bool result = false;
+            full_duplex::do_(px, [](auto const& x) {
+                full_duplex::do_(py, [&x](auto const& y) {
+                    result = hana::equal(x, y);
+                });
+            });
+            return result;
+        }
+    };
 }
 
 #endif
