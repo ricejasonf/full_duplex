@@ -4,7 +4,7 @@ list(APPEND CMAKE_MODULE_PATH /usr/local/cmake) # ??
 project(full_duplex_project)
 enable_testing()
 
-include(ricejasonf/quick_project)
+include(quick_project/Test)
 
 quick_project_add_check_target()
 

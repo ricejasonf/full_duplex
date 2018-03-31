@@ -14,5 +14,11 @@
 namespace hana = boost::hana;
 
 int main() {
-    
+    BOOST_HANA_RUNTIME_CHECK(hana::equal(
+        hana::transform(
+            hana::lift<full_duplex::promise_tag>(int{5}),
+            hana::id
+        ),
+        hana::lift<full_duplex::promise_tag>(int{5})
+    ));
 }
