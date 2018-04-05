@@ -7,6 +7,8 @@
 #ifndef FULL_DUPLEX_DETAIL_PROMISE_IMPL_HPP
 #define FULL_DUPLEX_DETAIL_PROMISE_IMPL_HPP
 
+#include <full_duplex/fwd/promise.hpp>
+
 #include <boost/hana/core/is_a.hpp>
 #include <utility>
 
@@ -76,12 +78,8 @@ namespace full_duplex::detail {
 
     template <typename Fn>
     struct lazy_async {
-        using hana_tag = lazy_async_tag
+        using hana_tag = lazy_async_tag;
         Fn fn;
-
-        lazy_holder_async_fn<Fn> construct() {
-            return lazy_holder_async_fn<Fn>(fn);
-        }
     };
 
     //
@@ -158,3 +156,5 @@ namespace full_duplex::detail {
         }
     };
 }
+
+#endif

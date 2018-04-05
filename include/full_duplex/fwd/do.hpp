@@ -25,7 +25,7 @@ namespace full_duplex {
     // void_input - tag used as placeholder for initial input
 
     struct void_input_t { };
-    constexpr void_intput_t void_input{};
+    constexpr void_input_t void_input{};
 }
 
 #endif

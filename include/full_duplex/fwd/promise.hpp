@@ -12,10 +12,32 @@ namespace full_duplex {
 
     struct promise_fn {
         template <typename AsyncFn>
-        auto operator()(AsyncFn&&) const;
+        constexpr auto operator()(AsyncFn&&) const;
     };
 
     constexpr promise_fn promise{};
+
+    //
+    // error
+    //
+
+    struct error_tag { };
+
+    template <typename T, typename = void>
+    struct error;
+
+    struct make_error_fn {
+        template <typename T>
+        constexpr auto operator()(T&&) const;
+    };
+
+    constexpr make_error_fn make_error;
+
+    //
+    // terminate
+    //
+
+    struct terminate { };
 }
 
 #endif

@@ -11,7 +11,8 @@ namespace full_duplex {
     // map - maps values excluding error<T> and terminate
 
     struct map_fn {
-        constexpr auto operator()(F&& f) const;
+        template <typename Fn>
+        constexpr auto operator()(Fn&& fn) const;
     };
 
     constexpr map_fn map{};
@@ -20,7 +21,8 @@ namespace full_duplex {
     //             same as `adjust_if(F, is<error_tag>)`
 
     struct map_error_fn {
-        constexpr auto operator()(F&& f) const;
+        template <typename Fn>
+        constexpr auto operator()(Fn&& fn) const;
     };
 
     constexpr map_error_fn map_error{};
@@ -28,7 +30,8 @@ namespace full_duplex {
     // map_raw - maps any value including error<T> and terminate
 
     struct map_raw_fn {
-        constexpr auto operator()(F&& f) const;
+        template <typename Fn>
+        constexpr auto operator()(Fn&& fn) const;
     };
 
     constexpr map_raw_fn map_raw{};
@@ -38,7 +41,8 @@ namespace full_duplex {
     //               Otherwise it passes through unchanged.
 
     struct catch_error_fn {
-        constexpr auto operator()(F&& f) const;
+        template <typename Fn>
+        constexpr auto operator()(Fn&& fn) const;
     };
 
     constexpr catch_error_fn catch_error{};

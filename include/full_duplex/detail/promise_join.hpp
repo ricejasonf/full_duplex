@@ -33,7 +33,7 @@ namespace full_duplex::detail {
         }
         else if constexpr(hana::is_a<lazy_async_tag, Impl>) {
             return final_promise<decltype(current.impl.construct()), std::decay_t<Next>>(
-                std::forward<Current>(current).impl.construct(),
+                make_lazy_holder_async(std::forward<Current>(current).impl.fn),
                 std::forward<Next>(next)
             );
         }

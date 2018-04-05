@@ -80,7 +80,7 @@ namespace full_duplex {
 
     template <typename ...Xs>
     do_fn::operator()(Xs&&... xs) const {
-        using Promise = promise_t<decltype(hana::make_basic_tuple(std::forward<Xs&&>(xs)...))>;
+        using Promise = detail::promise_t<decltype(hana::make_basic_tuple(std::forward<Xs&&>(xs)...))>;
         auto p = promise_sum_holder<Promise, promise_tail>{
             Promise{hana::make_basic_tuple(std::forward<Xs&&>(xs)...)}
         };
@@ -90,7 +90,7 @@ namespace full_duplex {
 
     template <typename ...Xs>
     do_loop_fn::operator()(Xs&&... xs) const {
-        using Promise = promise_t<decltype(hana::make_basic_tuple(std::forward<Xs&&>(xs)...))>;
+        using Promise = detail::promise_t<decltype(hana::make_basic_tuple(std::forward<Xs&&>(xs)...))>;
         auto p = promise_sum_holder<Promise, promise_loop_tail>{
             Promise{hana::make_basic_tuple(std::forward<Xs&&>(xs)...)}
         };

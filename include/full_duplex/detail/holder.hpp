@@ -9,10 +9,14 @@
 
 #include <full_duplex/detail/promise_impl.hpp>
 
+#include <boost/callable_traits/return_type.hpp>
+#include <boost/hana/type.hpp>
 #include <memory>
 #include <utility>
 
 namespace full_duplex::detail {
+    namespace ct    = boost::callable_traits;
+    namespace hana  = boost::hana;
 
     //
     // holder
@@ -29,7 +33,8 @@ namespace full_duplex::detail {
     };
 
     constexpr auto make_holder = [](auto&& fn) {
-        return holder<std::decay_t<decltype(fn)>(std::forward<decltype(fn)>(fn))>{};
+        using Holder = holder<std::decay_t<decltype(fn)>>;
+        return Holder{std::forward<decltype(fn)>(fn)};
     };
 
     //
@@ -63,7 +68,7 @@ namespace full_duplex::detail {
         }
 
         ~lazy_holder() {
-            if (old.engaged) {
+            if (engaged) {
                 value.~T();
             }
         }
@@ -74,10 +79,10 @@ namespace full_duplex::detail {
             engaged = true;
         }
 
-        inline bool is_engaged()
+        bool is_engaged()
         { return engaged; }
 
-        inline T const& force_get()
+        T const& force_get()
         { return value; }
 
     protected:
@@ -99,34 +104,39 @@ namespace full_duplex::detail {
     // lazy_holder_async_fn
     //
 
-    template <typename Fn>
+    template <typename T, typename Fn>
     struct lazy_holder_async_fn
         : lazy_holder_function<Fn>
         , lazy_holder<T>
     {
         template <typename FnArg>
         lazy_holder_async_fn(FnArg&& fn_arg)
-            : lazy_holder_function(std::forward<FnArg>(fn_arg))
+            : lazy_holder_function<Fn>(std::forward<FnArg>(fn_arg))
             , lazy_holder<T>()
         { }
 
-        template <typename Resolver, typename Input>
+        template <typename ResolveFn, typename Input>
         void operator()(ResolveFn& resolve, Input&& input) noexcept {
-            new(std::addressof(value)) T(this->fn(resolve, std::forward<Input>(input)));
-            engaged = true;
+            new(std::addressof(this->value)) T(this->fn(resolve, std::forward<Input>(input)));
+            this->engaged = true;
         }
     };
 
-
-    constexpr auto has_return_type = hana::is_valid([](auto const& fn)
-        -> ct::return_type_t<decltype(fn)>
-    { });
+    constexpr auto make_lazy_holder_async = [](auto&& fn) {
+        using T = ct::return_type_t<decltype(fn)>;
+        using Fn = decltype(fn);
+        return lazy_holder_async_fn<T, std::decay_t<Fn>>(std::forward<Fn>(fn));
+    };
 
     // make_lazy_promise_storage
     //      - returns Promise impl that stores
     //        intermediate promise returned by user
     //        fn if the return type is not dependent
     //        (used in chain_impl)
+    constexpr auto has_return_type = hana::is_valid([](auto const& fn)
+        -> ct::return_type_t<decltype(fn)>
+    { });
+
     template <typename Fn>
     constexpr auto make_lazy_promise_storage(Fn&& fn) {
         if constexpr(hana::is_a<promise_tag, Fn>) {
