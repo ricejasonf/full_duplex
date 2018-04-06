@@ -8,7 +8,7 @@
 #define FULL_DUPLEX_PROMISE_HPP
 
 #include <full_duplex/detail/holder.hpp>
-#include <full_duplex/fwd/do.hpp>
+#include <full_duplex/do.hpp>
 #include <full_duplex/fwd/map.hpp>
 #include <full_duplex/fwd/promise.hpp>
 
@@ -17,7 +17,9 @@
 #include <boost/hana/chain.hpp>
 #include <boost/hana/concat.hpp>
 #include <boost/hana/functional/compose.hpp>
+#include <boost/hana/functional/partial.hpp>
 #include <boost/hana/lift.hpp>
+#include <boost/hana/tap.hpp>
 #include <boost/hana/transform.hpp>
 #include <boost/hana/functional/id.hpp>
 #include <boost/hana/functional/overload_linearly.hpp>
@@ -38,17 +40,12 @@ namespace full_duplex::detail {
 
             return promise([h{std::move(h)}, this](auto& resolve, auto&&) {
                 do_(
-                    promise(std::move(h)),
+                    promise(std::move(h).value),
                     *this,
                     tap(std::ref(resolve))
                 );
             });
         }
-    };
-
-    template <typename T>
-    struct error_value {
-        T value;
     };
 } 
 
@@ -58,15 +55,6 @@ namespace full_duplex {
         auto impl = detail::async_handler<std::decay_t<AsyncFn>>{std::forward<AsyncFn>(fn)};
         return detail::promise_t<decltype(impl)>{impl};
     }
-
-    // error
-    template <typename T>
-    struct error<T> : detail::error_value<T> { };
-
-    template <typename T>
-    constexpr auto make_error_fn::operator()(T&& t) const {
-        return error<std::decay_t<T>>{std::forward<T>(t)};
-    };
 }
 
 namespace boost::hana
@@ -77,7 +65,8 @@ namespace boost::hana
     struct transform_impl<full_duplex::promise_tag> {
         template <typename Promise, typename Fn>
         static constexpr auto apply(Promise&& p, Fn&& fn) {
-            auto impl = full_duplex::map_raw({std::forward<Fn>(fn)});
+            using Impl = full_duplex::detail::pmap_raw_handler<std::decay_t<Fn>>;
+            auto impl = Impl{std::forward<Fn>(fn)};
             return hana::chain(
                 std::forward<Promise>(p),
                 full_duplex::detail::promise_t<decltype(impl)>{std::move(impl)}
@@ -91,7 +80,6 @@ namespace boost::hana
     struct ap_impl<full_duplex::promise_tag> {
         template <typename F, typename X>
         static constexpr auto apply(F&& f, X&& x) {
-            // TODO simplify this
             return hana::chain(
                 std::forward<F>(f),
                 hana::partial(hana::transform, std::forward<X>(x))
@@ -103,7 +91,7 @@ namespace boost::hana
     struct lift_impl<full_duplex::promise_tag> {
         template <typename X>
         static constexpr auto apply(X&& x) {
-            return promise(full_duplex::detail::holder<std::decay_t<X>>(std::forward<X>(x)));
+            return full_duplex::promise(full_duplex::detail::make_holder(std::forward<X>(x)));
         }
     };
 
@@ -125,7 +113,7 @@ namespace boost::hana
         static constexpr auto apply(M&& m, Fn&& fn) {
             auto impl = hana::concat(
                 wrap(std::forward<M>(m).impl),
-                wrap(make_lazy_promise_storage(std::forward<Fn>(fn)))
+                wrap(full_duplex::detail::make_lazy_promise_storage(std::forward<Fn>(fn)))
             );
 
             return full_duplex::detail::promise_t<decltype(impl)>{std::move(impl)};
@@ -139,11 +127,15 @@ namespace boost::hana
         template <typename Px, typename Py>
         static bool apply(Px const& px, Py const& py) {
             bool result = false;
-            full_duplex::do_(px, [&](auto const& x) {
-                full_duplex::do_(py, [&](auto const& y) {
-                    result = hana::equal(x, y);
-                });
-            });
+            full_duplex::do_(
+                hana::chain(px, hana::tap<full_duplex::promise_tag>([&](auto const& x) {
+                    full_duplex::do_(
+                        hana::chain(py, hana::tap<full_duplex::promise_tag>([&](auto const& y) {
+                            result = hana::equal(x, y);
+                        }))
+                    );
+                }))
+            );
             return result;
         }
     };

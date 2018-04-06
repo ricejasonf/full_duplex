@@ -16,28 +16,11 @@ namespace full_duplex {
     };
 
     constexpr promise_fn promise{};
+}
 
-    //
-    // error
-    //
-
-    struct error_tag { };
-
-    template <typename T, typename = void>
-    struct error;
-
-    struct make_error_fn {
-        template <typename T>
-        constexpr auto operator()(T&&) const;
-    };
-
-    constexpr make_error_fn make_error;
-
-    //
-    // terminate
-    //
-
-    struct terminate { };
+namespace full_duplex::detail {
+    template <typename Impl>
+    struct promise_t;
 }
 
 #endif

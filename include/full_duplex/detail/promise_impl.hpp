@@ -8,6 +8,7 @@
 #define FULL_DUPLEX_DETAIL_PROMISE_IMPL_HPP
 
 #include <full_duplex/fwd/promise.hpp>
+#include <full_duplex/error.hpp>
 
 #include <boost/hana/core/is_a.hpp>
 #include <utility>

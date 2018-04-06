@@ -21,7 +21,7 @@ namespace full_duplex {
 
         template <typename Input>
         void operator()(Input&& input) {
-            current(next, arg);
+            current(next, std::forward<Input>(input));
         }
 
     private:
@@ -31,7 +31,8 @@ namespace full_duplex {
 }
 
 namespace full_duplex::detail {
-    using final_promise = _p;
+    template <typename Current, typename Next>
+    using final_promise = _p<Current, Next>;
 }
 
 #endif

@@ -8,9 +8,12 @@
 #define FULL_DUPLEX_DETAIL_HOLDER_HPP
 
 #include <full_duplex/detail/promise_impl.hpp>
+#include <full_duplex/error.hpp>
 
 #include <boost/callable_traits/return_type.hpp>
+#include <boost/hana/optional.hpp>
 #include <boost/hana/type.hpp>
+#include <cstdlib>
 #include <memory>
 #include <utility>
 
@@ -36,6 +39,53 @@ namespace full_duplex::detail {
         using Holder = holder<std::decay_t<decltype(fn)>>;
         return Holder{std::forward<decltype(fn)>(fn)};
     };
+
+    //
+    // erased_holder
+    //
+
+    struct erased_holder {
+        void* data_;
+        void(*destroy)(void*);
+
+        erased_holder() = default;
+
+        erased_holder(void* data_, void(*destroy)(void*))
+            : data_(data_)
+            , destroy(destroy)
+        { }
+
+        erased_holder(erased_holder&& old)
+            : data_(old.data_)
+        {
+            old.invalidate();
+        }
+
+        void operator=(erased_holder&& old) {
+            data_ = old.data_;
+            old.invalidate();
+        }
+
+        ~erased_holder() {
+            destroy(data_);
+        }
+
+    private:
+        void invalidate() {
+            destroy = [](void*) { };
+        }
+    };
+
+    template <typename T>
+    erased_holder make_erased_holder(void* data_) {
+        return erased_holder{
+            data_, 
+            [](void* data_) {
+                reinterpret_cast<T*>(data_)->~T();
+                std::free(data_);
+            }
+        };
+    }
 
     //
     // lazy_holder
@@ -98,13 +148,18 @@ namespace full_duplex::detail {
     struct lazy_holder_function
     {
         Fn fn;
+
+        template <typename FnArg>
+        lazy_holder_function(FnArg&& fn_arg)
+            : fn(std::forward<FnArg>(fn_arg))
+        { }
     };
 
     //
     // lazy_holder_async_fn
     //
 
-    template <typename T, typename Fn>
+    template <typename PromiseJoinFn, typename T, typename Fn>
     struct lazy_holder_async_fn
         : lazy_holder_function<Fn>
         , lazy_holder<T>
@@ -122,10 +177,51 @@ namespace full_duplex::detail {
         }
     };
 
+    template <typename PromiseJoinFn, typename Fn>
+    struct lazy_holder_async_fn<PromiseJoinFn, erased_holder, Fn>
+        : lazy_holder_function<Fn>
+    {
+        erased_holder holder;
+
+        template <typename FnArg>
+        lazy_holder_async_fn(FnArg&& fn_arg) // function that returns a promise
+            : lazy_holder_function<Fn>(std::forward<FnArg>(fn_arg))
+            , holder()
+        { }
+
+        template <typename ResolveFn, typename Input>
+        void operator()(ResolveFn& resolve, Input&& input) noexcept {
+            using Joined = decltype(PromiseJoinFn{}(this->fn(std::forward<Input>(input)), resolve));
+
+            void* ptr = std::malloc(sizeof(Joined));
+
+            if (ptr == nullptr) {
+                resolve(make_error(std::runtime_error("malloc failed")));
+            }
+            else {
+                new(ptr) Joined(PromiseJoinFn{}(this->fn(std::forward<Input>(input)), resolve));
+                holder = make_erased_holder<Joined>(ptr);
+            }
+        }
+    };
+
+#if 0
+    constexpr auto has_return_type = hana::is_valid([](auto const& fn)
+        -> ct::return_type_t<decltype(fn)>
+    { });
+#endif
+
+    constexpr auto get_result_holder_type = [](auto const& fn) {
+        return hana::sfinae([](auto const& fn) -> hana::type<ct::return_type_t<decltype(fn)>> { })(fn)
+               .value_or(hana::type_c<erased_holder>);
+    };
+
+    template <typename PromiseJoinFn>
     constexpr auto make_lazy_holder_async = [](auto&& fn) {
-        using T = ct::return_type_t<decltype(fn)>;
-        using Fn = decltype(fn);
-        return lazy_holder_async_fn<T, std::decay_t<Fn>>(std::forward<Fn>(fn));
+        using Fn = decltype(fn); // function that returns a promise
+        using T = typename decltype(get_result_holder_type(fn))::type;
+
+        return lazy_holder_async_fn<PromiseJoinFn, T, std::decay_t<Fn>>(std::forward<Fn>(fn));
     };
 
     // make_lazy_promise_storage
@@ -133,27 +229,13 @@ namespace full_duplex::detail {
     //        intermediate promise returned by user
     //        fn if the return type is not dependent
     //        (used in chain_impl)
-    constexpr auto has_return_type = hana::is_valid([](auto const& fn)
-        -> ct::return_type_t<decltype(fn)>
-    { });
-
     template <typename Fn>
     constexpr auto make_lazy_promise_storage(Fn&& fn) {
         if constexpr(hana::is_a<promise_tag, Fn>) {
             return std::forward<Fn>(fn).impl;
         }
-        else if constexpr(has_return_type(fn)) {
-            return lazy_async<std::decay_t<Fn>>{std::forward<Fn>(fn)};
-        }
         else {
-            auto holder = make_holder(std::forward<Fn>(fn));
-            auto new_fn = [holder{std::move(holder)}](auto& resolve, auto&& input) {
-                auto intermediate_promise = holder.value(std::forward<decltype(input)>(input));
-                intermediate_promise(resolve, std::forward<decltype(input)>(input));
-                // THE LIFETIME OF `intermediate_promise` MUST BE MANAGED BY THE USER
-            };
-
-            return async_raw_handler<decltype(new_fn)>{std::move(new_fn)};
+            return lazy_async<std::decay_t<Fn>>{std::forward<Fn>(fn)};
         }
     }
 }
