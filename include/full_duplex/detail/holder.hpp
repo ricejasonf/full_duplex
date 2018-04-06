@@ -45,25 +45,33 @@ namespace full_duplex::detail {
     //
 
     struct erased_holder {
+        using destroyer_fn = void(*)(void*);
+
         void* data_;
         void(*destroy)(void*);
 
-        erased_holder() = default;
+        constexpr erased_holder()
+            : data_(nullptr)
+            , destroy(noop())
+        { }
 
-        erased_holder(void* data_, void(*destroy)(void*))
+        constexpr erased_holder(void* data_, void(*destroy)(void*))
             : data_(data_)
             , destroy(destroy)
         { }
 
-        erased_holder(erased_holder&& old)
+        constexpr erased_holder(erased_holder&& old)
             : data_(old.data_)
+            , destroy(old.destroy)
         {
             old.invalidate();
         }
 
-        void operator=(erased_holder&& old) {
+        constexpr erased_holder& operator=(erased_holder&& old) {
             data_ = old.data_;
+            destroy = old.destroy;
             old.invalidate();
+            return *this;
         }
 
         ~erased_holder() {
@@ -71,9 +79,11 @@ namespace full_duplex::detail {
         }
 
     private:
-        void invalidate() {
-            destroy = [](void*) { };
+        constexpr void invalidate() {
+            destroy = noop();
         }
+
+        constexpr void(*noop())(void*) { return [](void*) { }; }
     };
 
     template <typename T>
@@ -199,8 +209,9 @@ namespace full_duplex::detail {
                 resolve(make_error(std::runtime_error("malloc failed")));
             }
             else {
-                new(ptr) Joined(PromiseJoinFn{}(this->fn(std::forward<Input>(input)), resolve));
+                new(ptr) Joined(PromiseJoinFn{}(this->fn(input), resolve));
                 holder = make_erased_holder<Joined>(ptr);
+                reinterpret_cast<Joined*>(ptr)->operator()(std::forward<Input>(input));
             }
         }
     };

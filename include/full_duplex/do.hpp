@@ -27,7 +27,6 @@ namespace full_duplex::detail {
         template <typename Input>
         void operator()(Input const&) {
             static_assert(not hana::is_an<error_tag, Input>, "Unhandled Promise Error!");
-
             delete holder;
         }
     };
