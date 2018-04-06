@@ -7,6 +7,8 @@
 #ifndef FULL_DUPLEX_FWD_PROMISE_HPP
 #define FULL_DUPLEX_FWD_PROMISE_HPP
 
+#include <boost/hana/fwd/lift.hpp>
+
 namespace full_duplex {
     struct promise_tag { };
 
@@ -16,6 +18,8 @@ namespace full_duplex {
     };
 
     constexpr promise_fn promise{};
+
+    constexpr boost::hana::lift_t<promise_tag> promise_lift;
 }
 
 namespace full_duplex::detail {
