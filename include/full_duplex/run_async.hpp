@@ -4,11 +4,11 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef FULL_DUPLEX_DO_HPP
-#define FULL_DUPLEX_DO_HPP
+#ifndef FULL_DUPLEX_RUN_ASYNC_HPP
+#define FULL_DUPLEX_RUN_ASYNC_HPP
 
 #include <full_duplex/detail/promise_join.hpp>
-#include <full_duplex/fwd/do.hpp>
+#include <full_duplex/fwd/run_async.hpp>
 
 #include <boost/hana/basic_tuple.hpp>
 #include <boost/hana/core/is_a.hpp>
@@ -74,11 +74,12 @@ namespace full_duplex::detail {
         void invoke() { promise_sum(void_input); }
     };
 }
+
 namespace full_duplex {
     namespace hana = boost::hana;
 
     template <typename ...Xs>
-    constexpr auto do_fn::operator()(Xs&&... xs) const {
+    constexpr auto run_async_fn::operator()(Xs&&... xs) const {
         using Impl = decltype(hana::make_basic_tuple(std::forward<Xs&&>(xs)...));
         auto p = new detail::promise_sum_holder<Impl, detail::promise_tail>{
             hana::make_basic_tuple(std::forward<Xs&&>(xs)...)
@@ -88,7 +89,7 @@ namespace full_duplex {
     }
 
     template <typename ...Xs>
-    constexpr auto do_loop_fn::operator()(Xs&&... xs) const {
+    constexpr auto run_async_loop_fn::operator()(Xs&&... xs) const {
         using Impl = decltype(hana::make_basic_tuple(std::forward<Xs&&>(xs)...));
         auto p = new detail::promise_sum_holder<Impl, detail::promise_loop_tail>{
             hana::make_basic_tuple(std::forward<Xs&&>(xs)...)

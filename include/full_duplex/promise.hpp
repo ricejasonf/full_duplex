@@ -8,7 +8,7 @@
 #define FULL_DUPLEX_PROMISE_HPP
 
 #include <full_duplex/detail/holder.hpp>
-#include <full_duplex/do.hpp>
+#include <full_duplex/run_async.hpp>
 #include <full_duplex/fwd/map.hpp>
 #include <full_duplex/fwd/promise.hpp>
 
@@ -33,13 +33,15 @@ namespace full_duplex::detail {
 
         Impl impl;
 
+        // calling this directly would mostly certainly result
+        // in heap allocation and type erasure
         template <typename Input>
         auto operator()(Input&& input) noexcept {
             using T = std::decay_t<Input>;
             auto h = holder<T>{std::forward<Input>(input)};
 
             return promise([h{std::move(h)}, this](auto& resolve, auto&&) {
-                do_(
+                run_async(
                     promise(std::move(h).value),
                     *this,
                     tap(std::ref(resolve))
@@ -127,9 +129,9 @@ namespace boost::hana
         template <typename Px, typename Py>
         static bool apply(Px const& px, Py const& py) {
             bool result = false;
-            full_duplex::do_(
+            full_duplex::run_async(
                 hana::chain(px, hana::tap<full_duplex::promise_tag>([&](auto const& x) {
-                    full_duplex::do_(
+                    full_duplex::run_async(
                         hana::chain(py, hana::tap<full_duplex::promise_tag>([&](auto const& y) {
                             result = hana::equal(x, y);
                         }))

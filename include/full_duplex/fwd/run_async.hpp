@@ -4,23 +4,23 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //
-#ifndef FULL_DUPLEX_FWD_DO_HPP
-#define FULL_DUPLEX_FWD_DO_HPP
+#ifndef FULL_DUPLEX_FWD_RUN_ASYNC_HPP
+#define FULL_DUPLEX_FWD_RUN_ASYNC_HPP
 
 namespace full_duplex {
-    struct do_fn {
+    struct run_async_fn {
         template <typename ...Xs>
         constexpr auto operator()(Xs&& ...xs) const;
     };
 
-    constexpr do_fn do_{};
+    constexpr run_async_fn run_async{};
 
-    struct do_loop_fn {
+    struct run_async_loop_fn {
         template <typename ...Xs>
         constexpr auto operator()(Xs&& ...xs) const;
     };
 
-    constexpr do_loop_fn do_loop{};
+    constexpr run_async_loop_fn run_async_loop{};
 
     // void_input - tag used as placeholder for initial input
 
