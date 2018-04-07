@@ -14,6 +14,7 @@
 #include <boost/hana/optional.hpp>
 #include <boost/hana/type.hpp>
 #include <cstdlib>
+#include <functional>
 #include <memory>
 #include <utility>
 
@@ -169,76 +170,50 @@ namespace full_duplex::detail {
     // lazy_holder_async_fn
     //
 
-    template <typename PromiseJoinFn, typename T, typename Fn>
+    template <typename PromiseJoinFn, typename Fn>
     struct lazy_holder_async_fn
         : lazy_holder_function<Fn>
-        , lazy_holder<T>
     {
-        template <typename FnArg>
-        lazy_holder_async_fn(FnArg&& fn_arg)
-            : lazy_holder_function<Fn>(std::forward<FnArg>(fn_arg))
-            , lazy_holder<T>()
+        erased_holder holder_;
+
+        explicit lazy_holder_async_fn(Fn&& fn)
+            : lazy_holder_function<Fn>(std::move(fn))
+            , holder_()
         { }
 
         template <typename ResolveFn, typename Input>
         void operator()(ResolveFn& resolve, Input&& input) noexcept {
-            new(std::addressof(this->value)) T(this->fn(resolve, std::forward<Input>(input)));
-            this->engaged = true;
-        }
-    };
-
-    template <typename PromiseJoinFn, typename Fn>
-    struct lazy_holder_async_fn<PromiseJoinFn, erased_holder, Fn>
-        : lazy_holder_function<Fn>
-    {
-        erased_holder holder;
-
-        template <typename FnArg>
-        lazy_holder_async_fn(FnArg&& fn_arg) // function that returns a promise
-            : lazy_holder_function<Fn>(std::forward<FnArg>(fn_arg))
-            , holder()
-        { }
-
-        template <typename ResolveFn, typename Input>
-        void operator()(ResolveFn& resolve, Input&& input) noexcept {
-            using Joined = decltype(PromiseJoinFn{}(this->fn(std::forward<Input>(input)), resolve));
+            using Joined = decltype(PromiseJoinFn{}(
+                this->fn(std::forward<Input>(input)),
+                std::ref(resolve)
+            ));
 
             void* ptr = std::malloc(sizeof(Joined));
 
             if (ptr == nullptr) {
-                resolve(make_error(std::runtime_error("malloc failed")));
+                throw std::runtime_error("malloc failed");
+                // Could possibly handle this but it complicates the Laws tests
+                //resolve(make_error(std::runtime_error("malloc failed")));
             }
             else {
-                new(ptr) Joined(PromiseJoinFn{}(this->fn(input), resolve));
-                holder = make_erased_holder<Joined>(ptr);
+                new(ptr) Joined(PromiseJoinFn{}(this->fn(input), std::ref(resolve)));
+                holder_ = make_erased_holder<Joined>(ptr);
                 reinterpret_cast<Joined*>(ptr)->operator()(std::forward<Input>(input));
             }
         }
     };
 
-#if 0
-    constexpr auto has_return_type = hana::is_valid([](auto const& fn)
-        -> ct::return_type_t<decltype(fn)>
-    { });
-#endif
-
-    constexpr auto get_result_holder_type = [](auto const& fn) {
-        return hana::sfinae([](auto const& fn) -> hana::type<ct::return_type_t<decltype(fn)>> { })(fn)
-               .value_or(hana::type_c<erased_holder>);
-    };
-
     template <typename PromiseJoinFn>
     constexpr auto make_lazy_holder_async = [](auto&& fn) {
         using Fn = decltype(fn); // function that returns a promise
-        using T = typename decltype(get_result_holder_type(fn))::type;
 
-        return lazy_holder_async_fn<PromiseJoinFn, T, std::decay_t<Fn>>(std::forward<Fn>(fn));
+        return lazy_holder_async_fn<PromiseJoinFn, std::decay_t<Fn>>(std::forward<Fn>(fn));
     };
 
-    // make_lazy_promise_storage
-    //      - returns Promise impl that stores
-    //        intermediate promise returned by user
-    //        fn if the return type is not dependent
+    // make_lazy_promise_impl
+    //      - returns Promise impl that stores the
+    //        dependent promise using type erasure
+    //        unless the fn is a promise itself
     //        (used in chain_impl)
     template <typename Fn>
     constexpr auto make_lazy_promise_storage(Fn&& fn) {

@@ -13,10 +13,9 @@ namespace full_duplex {
 
     template <typename Current, typename Next>
     struct _p {
-        template <typename T, typename U>
-        _p(T&& c, U&& n)
-            : current(std::forward<T>(c))
-            , next(std::forward<U>(n))
+        _p(Current&& c, Next&& n)
+            : current(std::move(c))
+            , next(std::move(n))
         { }
 
         template <typename Input>
