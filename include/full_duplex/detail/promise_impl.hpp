@@ -131,7 +131,7 @@ namespace full_duplex::detail {
                 return terminate{};
             }
             else if constexpr(hana::is_a<error_tag, Input>) {
-                return fn(std::forward<Input>(input));
+                return make_error(fn(std::forward<Input>(input).value));
             }
             else {
                 return std::forward<Input>(input);
@@ -144,12 +144,17 @@ namespace full_duplex::detail {
         using hana_tag = pmap_tag;
         Fn fn;
 
-        template <typename ResolveFn, typename Input>
-        constexpr void operator()(ResolveFn&& resolve, Input&& input) const {
+        template <typename Input>
+        constexpr decltype(auto) operator()(Input&& input) const {
             // uses libc++ impl details FIXME
-            if constexpr(std::__invokable<Fn, Input>::value) {
-                fn(std::forward<Input>(input));
-                std::forward<ResolveFn>(resolve)(terminate{});
+            if constexpr(hana::is_a<error_tag, Input>) {
+                if constexpr(std::__invokable<Fn, typename std::decay_t<Input>::value_type>::value) {
+                    fn(std::forward<Input>(input).value);
+                    return terminate{};
+                }
+                else {
+                    return std::forward<Input>(input);
+                }
             }
             else {
                 return std::forward<Input>(input);

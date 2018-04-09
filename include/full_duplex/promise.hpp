@@ -128,14 +128,20 @@ namespace boost::hana
     struct equal_impl<full_duplex::promise_tag, full_duplex::promise_tag> {
         template <typename Px, typename Py>
         static bool apply(Px const& px, Py const& py) {
+            using full_duplex::run_async;
+            using full_duplex::promise;
+            using full_duplex::terminate;
+
             bool result = false;
             full_duplex::run_async(
-                hana::chain(px, hana::tap<full_duplex::promise_tag>([&](auto const& x) {
+                hana::chain(px, promise([&](auto& resolve, auto const& x) {
                     full_duplex::run_async(
-                        hana::chain(py, hana::tap<full_duplex::promise_tag>([&](auto const& y) {
+                        hana::chain(py, full_duplex::promise([&](auto& resolve, auto const& y) {
                             result = hana::equal(x, y);
+                            resolve(full_duplex::terminate{});
                         }))
                     );
+                    resolve(full_duplex::terminate{});
                 }))
             );
             return result;

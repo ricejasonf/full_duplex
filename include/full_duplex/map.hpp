@@ -11,9 +11,18 @@
 #include <full_duplex/detail/promise_impl.hpp>
 #include <full_duplex/promise.hpp>
 
+#include <boost/hana/functional/capture.hpp>
 #include <utility>
 
 namespace full_duplex {
+    namespace hana = boost::hana;
+
+    template <typename Fn>
+    constexpr auto map_any_fn::operator()(Fn&& fn) const {
+        using T = detail::pmap_raw_handler<std::decay_t<Fn>>;
+        return detail::promise_t<T>{T{std::forward<Fn>(fn)}};
+    }
+
     template <typename Fn>
     constexpr auto map_fn::operator()(Fn&& fn) const {
         using T = detail::pmap_handler<std::decay_t<Fn>>;
@@ -27,14 +36,8 @@ namespace full_duplex {
     }
 
     template <typename Fn>
-    constexpr auto map_raw_fn::operator()(Fn&& fn) const {
-        using T = detail::pmap_raw_handler<std::decay_t<Fn>>;
-        return detail::promise_t<T>{T{std::forward<Fn>(fn)}};
-    }
-
-    template <typename Fn>
     constexpr auto catch_error_fn::operator()(Fn&& fn) const {
-        using T = detail::catch_handler<std::decay_t<Fn>>;
+        using T = detail::catch_error_handler<std::decay_t<Fn>>;
         return detail::promise_t<T>{T{std::forward<Fn>(fn)}};
     }
 
@@ -44,7 +47,7 @@ namespace full_duplex {
         constexpr auto tap_helper = [fn_{std::move(fn_)}](auto&& input) {
             fn_(input);
             return std::forward<decltype(input)>(input);
-        }
+        };
         using T = detail::pmap_handler<decltype(tap_helper)>;
         return detail::promise_t<T>{T{tap_helper}};
     }
