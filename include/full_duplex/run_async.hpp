@@ -42,7 +42,7 @@ namespace full_duplex::detail {
         { }
 
         template <typename Input>
-        void operator()(Input const&) {
+        void operator()(Input&& input) {
             static_assert(not hana::is_an<error_tag, Input>, "Unhandled Promise Error!");
 
             if constexpr(hana::is_a<terminate, Input>) {
@@ -50,7 +50,7 @@ namespace full_duplex::detail {
             }
             else {
                 // start the promise over again
-                holder->promise_sum(void_input);
+                holder->promise_sum(std::forward<Input>(input));
             }
         }
     };
