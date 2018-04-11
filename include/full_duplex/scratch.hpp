@@ -29,7 +29,7 @@
             pop_from_queue,
             websocket_send_stuff
         )
-    );
+    ));
 
     auto endpoint = endpoint_open(
         initial_value,
