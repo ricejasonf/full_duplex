@@ -9,9 +9,13 @@
 
 #include <full_duplex/fwd/endpoint.hpp>
 #include <full_duplex/promise.hpp>
+#include <full_duplex/do.hpp>
 
+#include <boost/hana/at_key.hpp>
 #include <boost/hana/basic_tuple.hpp>
+#include <boost/hana/equal.hpp>
 #include <boost/hana/map.hpp>
+#include <boost/hana/pair.hpp>
 #include <boost/hana/plus.hpp>
 #include <boost/hana/sum.hpp>
 #include <boost/hana/zero.hpp>
@@ -28,35 +32,57 @@ namespace full_duplex {
 
     template <typename ...Events>
     constexpr auto endpoint_fn::operator()(Events&& ...events) const {
-        using Storage = decltype(hana::make_map(std::forward<Events>(events)));
-        return endpoint_t<Storage>{hana::make_map(std::forward<Events>(events))};
+        using Storage = decltype(hana::make_map(std::forward<Events>(events)...));
+        return endpoint_t<Storage>{hana::make_map(std::forward<Events>(events)...)};
     }
 
     template <typename ...Xs>
     constexpr auto endpoint_compose_fn::operator()(Xs&& ...xs) const {
-        return hana::sum<endpoint_tag>(hana::make_basic_tuple(std::forward<Xs>(xs)));
+        return hana::sum<endpoint_tag>(hana::make_basic_tuple(std::forward<Xs>(xs)...));
     }
-}
 
-namespace full_duplex::event {
     template <typename T>
     template <typename P>
-    constexpr auto event_t<T>::operator=(P&& p) {
+    constexpr auto event_t<T>::operator=(P&& p) const {
         return hana::make_pair(event_t<T>{}, std::forward<P>(p));
     }
 }
 
 namespace boost::hana {
-    // Hashable (event)
+    //
+    // event
+    //
+
+    // Comparable
+
+    template <>
+    struct equal_impl<full_duplex::event_tag, full_duplex::event_tag> {
+        template <typename T, typename U>
+        static constexpr auto apply(full_duplex::event_t<T>, full_duplex::event_t<U>)
+            -> hana::bool_<std::is_same_v<T, U>>
+        { return {}; }
+
+        template <typename T, typename U>
+        static constexpr auto apply(T, T)
+            -> hana::true_
+        { return {}; }
+    };
+
+    // Hashable
 
     template <>
     struct hash_impl<full_duplex::event_tag> {
         template <typename T>
-        static constexpr T apply(T)
+        static constexpr auto apply(T)
+            -> hana::type<T>
         { return {}; }
     };
 
-    // Monoid (endpoint) (non-commutative)
+    //
+    // endpoint
+    //
+
+    // Monoid (non-commutative)
 
     template <>
     struct plus_impl<full_duplex::endpoint_tag, full_duplex::endpoint_tag> {
@@ -64,7 +90,7 @@ namespace boost::hana {
         static constexpr auto apply(T&& t, U&& u) {
             using full_duplex::do_;
             using full_duplex::endpoint;
-            using full_duplex::event;
+            namespace event = full_duplex::event;
 
             return endpoint(
                 event::init = do_(
@@ -85,11 +111,10 @@ namespace boost::hana {
 
     template <>
     struct zero_impl<full_duplex::endpoint_tag> {
-        template <typename T, typename U>
-        static auto apply(T&& t, U&& u) {
+        static constexpr auto apply() {
             using full_duplex::do_;
             using full_duplex::endpoint;
-            using full_duplex::event;
+            namespace event = full_duplex::event;
 
             return endpoint(
                 event::init = do_(),

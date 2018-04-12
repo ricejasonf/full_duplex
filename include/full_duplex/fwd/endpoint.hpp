@@ -26,24 +26,27 @@ namespace full_duplex {
     };
 
     constexpr endpoint_compose_fn endpoint_compose{};
-}
 
-namespace full_duplex::event {
+    // event
     struct event_tag { };
 
     template <typename T>
     struct event_t {
-        using hana::tag = event_tag;
+        using hana_tag = event_tag;
+
+        template <typename P>
         constexpr auto operator=(P&& p) const;
     };
+}
 
+namespace full_duplex::event {
     struct init_t { };
     struct read_message_t { };
     struct write_message_t { };
 
-    constexpr event<init_t> init;
-    constexpr event<read_message_t> read_message;
-    constexpr event<write_message_t> write_message;
+    constexpr event_t<init_t> init;
+    constexpr event_t<read_message_t> read_message;
+    constexpr event_t<write_message_t> write_message;
 }
 
 #endif
