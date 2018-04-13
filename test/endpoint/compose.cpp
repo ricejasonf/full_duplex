@@ -21,24 +21,26 @@ using full_duplex::endpoint_compose;
 using full_duplex::promise;
 using full_duplex::map;
 
-template <int i>
-constexpr auto push_back = map([](auto&& vec) {
-    vec.push_back(i);
-    return std::forward<decltype(vec)>(vec);
-});
+namespace {
+    template <int i>
+    constexpr auto push_back = map([](auto&& vec) {
+        vec.push_back(i);
+        return std::forward<decltype(vec)>(vec);
+    });
 
-template <int i>
-constexpr auto ep = full_duplex::endpoint(
-    full_duplex::event::init          = push_back<i>,
-    full_duplex::event::read_message  = push_back<i>,
-    full_duplex::event::write_message = push_back<i> 
-);
+    template <int i>
+    constexpr auto ep = full_duplex::endpoint(
+        full_duplex::event::init          = push_back<i>,
+        full_duplex::event::read_message  = push_back<i>,
+        full_duplex::event::write_message = push_back<i> 
+    );
 
-constexpr auto term_ep = full_duplex::endpoint(
-    full_duplex::event::init          = map(hana::always(full_duplex::terminate{})),
-    full_duplex::event::read_message  = map(hana::always(full_duplex::terminate{})),
-    full_duplex::event::write_message = map(hana::always(full_duplex::terminate{})) 
-);
+    constexpr auto term_ep = full_duplex::endpoint(
+        full_duplex::event::init          = map(hana::always(full_duplex::terminate{})),
+        full_duplex::event::read_message  = map(hana::always(full_duplex::terminate{})),
+        full_duplex::event::write_message = push_back<42> 
+    );
+}
 
 int main() {
     {

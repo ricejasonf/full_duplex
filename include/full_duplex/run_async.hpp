@@ -56,8 +56,7 @@ namespace full_duplex::detail {
     };
 
     template <typename PromiseImpl, template <typename> typename Tail>
-    struct promise_sum_holder
-    {
+    struct promise_sum_holder {
         using PromiseSum = decltype(detail::promise_join(
             std::declval<PromiseImpl>(),
             std::declval<Tail<promise_sum_holder>>()
