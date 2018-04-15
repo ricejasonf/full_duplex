@@ -27,9 +27,9 @@ namespace full_duplex::detail {
                 endpoint.init(),
                 tap([this](auto&&) {
                     is_started = true;
-                    start_send_queue(),
-                    keep_reading(),
-                })
+                    start_send_queue();
+                    keep_reading();
+                }),
                 error_catcher()
             );
         }
