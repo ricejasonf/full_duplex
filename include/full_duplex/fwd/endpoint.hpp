@@ -7,12 +7,14 @@
 #ifndef FULL_DUPLEX_FWD_ENDPOINT_HPP
 #define FULL_DUPLEX_FWD_ENDPOINT_HPP
 
+#include <full_duplex/fwd/event.hpp>
+
 namespace full_duplex {
     struct endpoint_tag { };
 
     template <typename ...>
     struct endpoint_t;
-  
+
     struct endpoint_fn {
         template <typename ...Events>
         constexpr auto operator()(Events&& ...) const;
@@ -26,17 +28,6 @@ namespace full_duplex {
     };
 
     constexpr endpoint_compose_fn endpoint_compose{};
-
-    // event
-    struct event_tag { };
-
-    template <typename T>
-    struct event_t {
-        using hana_tag = event_tag;
-
-        template <typename P>
-        constexpr auto operator=(P&& p) const;
-    };
 }
 
 namespace full_duplex::event {
@@ -44,9 +35,9 @@ namespace full_duplex::event {
     struct read_message_t { };
     struct write_message_t { };
 
-    constexpr event_t<init_t> init;
-    constexpr event_t<read_message_t> read_message;
-    constexpr event_t<write_message_t> write_message;
+    constexpr event_t<init_t>           init;
+    constexpr event_t<read_message_t>   read_message;
+    constexpr event_t<write_message_t>  write_message;
 }
 
 #endif

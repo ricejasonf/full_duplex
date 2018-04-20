@@ -7,13 +7,13 @@
 #ifndef FULL_DUPLEX_ENDPOINT_HPP
 #define FULL_DUPLEX_ENDPOINT_HPP
 
+#include <full_duplex/event.hpp>
 #include <full_duplex/fwd/endpoint.hpp>
 #include <full_duplex/promise.hpp>
 #include <full_duplex/do.hpp>
 
 #include <boost/hana/at_key.hpp>
 #include <boost/hana/basic_tuple.hpp>
-#include <boost/hana/equal.hpp>
 #include <boost/hana/map.hpp>
 #include <boost/hana/pair.hpp>
 #include <boost/hana/plus.hpp>
@@ -40,44 +40,9 @@ namespace full_duplex {
     constexpr auto endpoint_compose_fn::operator()(Xs&& ...xs) const {
         return hana::sum<endpoint_tag>(hana::make_basic_tuple(std::forward<Xs>(xs)...));
     }
-
-    template <typename T>
-    template <typename P>
-    constexpr auto event_t<T>::operator=(P&& p) const {
-        return hana::make_pair(event_t<T>{}, std::forward<P>(p));
-    }
 }
 
 namespace boost::hana {
-    //
-    // event
-    //
-
-    // Comparable
-
-    template <>
-    struct equal_impl<full_duplex::event_tag, full_duplex::event_tag> {
-        template <typename T, typename U>
-        static constexpr auto apply(full_duplex::event_t<T>, full_duplex::event_t<U>)
-            -> hana::bool_<std::is_same_v<T, U>>
-        { return {}; }
-
-        template <typename T, typename U>
-        static constexpr auto apply(T, T)
-            -> hana::true_
-        { return {}; }
-    };
-
-    // Hashable
-
-    template <>
-    struct hash_impl<full_duplex::event_tag> {
-        template <typename T>
-        static constexpr auto apply(T)
-            -> hana::type<T>
-        { return {}; }
-    };
-
     //
     // endpoint
     //
