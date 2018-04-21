@@ -49,6 +49,14 @@ namespace full_duplex::detail {
             });
         }
     };
+
+    constexpr auto promise_any = [](auto&& fn) {
+        auto impl = detail::async_raw_handler<std::decay_t<decltype(fn)>>{
+            std::forward<decltype(fn)>(fn)
+        };
+
+        return detail::promise_t<decltype(impl)>{impl};
+    };
 } 
 
 namespace full_duplex {
@@ -128,22 +136,24 @@ namespace boost::hana
     struct equal_impl<full_duplex::promise_tag, full_duplex::promise_tag> {
         template <typename Px, typename Py>
         static bool apply(Px const& px, Py const& py) {
-            using full_duplex::run_async;
-            using full_duplex::promise;
+            using full_duplex::detail::promise_join;
+            using full_duplex::detail::promise_any;
             using full_duplex::terminate;
+            using full_duplex::void_input;
 
             bool result = false;
-            full_duplex::run_async(
-                hana::chain(px, promise([&](auto& resolve, auto const& x) {
-                    full_duplex::run_async(
-                        hana::chain(py, full_duplex::promise([&](auto& resolve, auto const& y) {
+            promise_join(
+                hana::chain(px, promise_any([&](auto&, auto const& x) {
+                    promise_join(
+                        hana::chain(py, promise_any([&](auto&, auto const& y) {
                             result = hana::equal(x, y);
-                            resolve(full_duplex::terminate{});
-                        }))
-                    );
-                    resolve(full_duplex::terminate{});
-                }))
-            );
+                        })),
+                        promise_any([](auto&, auto&&) { /* does nothing */ })
+                    )(void_input);
+                })),
+                promise_any([](auto&, auto&&) { /* does nothing */ })
+            )(void_input);
+
             return result;
         }
     };

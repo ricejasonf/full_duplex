@@ -43,8 +43,8 @@ namespace full_duplex::detail {
             );
         }
         else if constexpr(hana::is_a<async_tag, Impl>) {
-            return final_promise<decltype(current.fn), std::decay_t<Next>>(
-                std::forward<Current>(current).fn,
+            return final_promise<std::decay_t<Current>, std::decay_t<Next>>(
+                std::forward<Current>(current),
                 std::forward<Next>(next)
             );
         }

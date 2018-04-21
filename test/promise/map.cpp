@@ -45,6 +45,7 @@ int main() {
         promise_lift(make_error(int{5}))
     ));
 
+
     // map does not transform `terminate`
     BOOST_HANA_RUNTIME_CHECK(hana::equal(
         hana::chain(
@@ -93,10 +94,10 @@ int main() {
     // catch_error does not catch error types outside of the subset (via SFINAE)
     BOOST_HANA_RUNTIME_CHECK(hana::equal(
         hana::chain(
-            promise_lift(int{5}),
-            catch_error([](int x) { return x * x; })
+            promise_lift(make_error(int{5})),
+            catch_error([](terminate) { assert(false); }) // not invokable
         ),
-        promise_lift(int{5})
+        promise_lift(make_error(int{5}))
     ));
 
     // catch_error does not catch valid values
@@ -115,5 +116,23 @@ int main() {
             catch_error([](auto x) { static_assert(std::is_void_v<decltype(x)>); })
         ),
         promise_lift(terminate{})
+    ));
+
+    // promise does not handle terminate
+    BOOST_HANA_RUNTIME_CHECK(hana::equal(
+        hana::chain(
+            promise_lift(terminate{}),
+            promise([](auto&, auto x) { static_assert(std::is_void_v<decltype(x)>); })
+        ),
+        promise_lift(terminate{})
+    ));
+
+    // promise does not handle error
+    BOOST_HANA_RUNTIME_CHECK(hana::equal(
+        hana::chain(
+            promise_lift(make_error(int{5})),
+            promise([](auto&, auto x) { static_assert(std::is_void_v<decltype(x)>); })
+        ),
+        promise_lift(make_error(int{5}))
     ));
 }

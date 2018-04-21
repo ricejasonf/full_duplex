@@ -39,7 +39,7 @@ namespace full_duplex::detail {
         AsyncFn fn;
 
         template <typename ResolveFn, typename Input>
-        constexpr void operator()(ResolveFn&& resolve, Input&& input) const {
+        constexpr void operator()(ResolveFn&& resolve, Input&& input) {
             if constexpr(hana::is_a<terminate, Input>) {
                 std::forward<ResolveFn>(resolve)(terminate{});
             }

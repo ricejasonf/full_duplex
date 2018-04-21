@@ -14,80 +14,77 @@
 
 #include <boost/hana/at_key.hpp>
 #include <boost/hana/basic_tuple.hpp>
+#include <boost/hana/find.hpp>
 #include <boost/hana/map.hpp>
 #include <boost/hana/pair.hpp>
 #include <boost/hana/plus.hpp>
-#include <boost/hana/sum.hpp>
-#include <boost/hana/zero.hpp>
+#include <boost/hana/reverse.hpp>
+#include <boost/hana/unpack.hpp>
 #include <utility>
 
 namespace full_duplex {
     namespace hana = boost::hana;
 
+    namespace detail {
+        constexpr auto get_endpoint_event = [](auto key, auto& map) {
+            return hana::find(map, key).value_or([](auto&) { return do_(); });
+        };
+    }
+
     template <typename Storage>
     struct endpoint_t<Storage> {
         using hana_tag = endpoint_tag;
+
+        template <typename Input>
+        constexpr auto init(Input& input) {
+            return hana::unpack(storage, [&](auto& ...map) {
+                return do_(detail::get_endpoint_event(event::init, map)(input)...);
+            });
+        }
+
+        template <typename Input>
+        constexpr auto read_message(Input& input) {
+            return hana::unpack(storage, [&](auto& ...map) {
+                return do_(detail::get_endpoint_event(event::read_message, map)(input)...);
+            });
+        }
+
+        template <typename Input>
+        constexpr auto write_message(Input& input) {
+            return hana::unpack(hana::reverse(storage), [&](auto ...map) {
+                return do_(detail::get_endpoint_event(event::write_message, map)(input)...);
+            });
+        }
+
+        template <typename Input>
+        constexpr auto error(Input& input) {
+            return hana::unpack(storage, [&](auto& ...map) {
+                return do_(detail::get_endpoint_event(event::error, map)(input)...);
+            });
+        }
+
         Storage storage;
     };
 
     template <typename ...Events>
     constexpr auto endpoint_fn::operator()(Events&& ...events) const {
-        using Storage = decltype(hana::make_map(std::forward<Events>(events)...));
-        return endpoint_t<Storage>{hana::make_map(std::forward<Events>(events)...)};
+        using Storage = decltype(hana::make_basic_tuple(
+            hana::make_map(std::forward<Events>(events)...))
+        );
+        return endpoint_t<Storage>{hana::make_basic_tuple(
+            hana::make_map(std::forward<Events>(events)...)
+        )};
     }
 
     template <typename ...Xs>
     constexpr auto endpoint_compose_fn::operator()(Xs&& ...xs) const {
-        return hana::sum<endpoint_tag>(hana::make_basic_tuple(std::forward<Xs>(xs)...));
+        using Storage = decltype(
+            hana::flatten(hana::make_basic_tuple(std::forward<Xs>(xs).storage...))
+        );
+        return endpoint_t<Storage>{
+            hana::flatten(hana::make_basic_tuple(std::forward<Xs>(xs).storage...))
+        };
     }
-}
-
-namespace boost::hana {
-    //
-    // endpoint
-    //
-
-    // Monoid (non-commutative)
-
-    template <>
-    struct plus_impl<full_duplex::endpoint_tag, full_duplex::endpoint_tag> {
-        template <typename T, typename U>
-        static constexpr auto apply(T&& t, U&& u) {
-            using full_duplex::do_;
-            using full_duplex::endpoint;
-            namespace event = full_duplex::event;
-
-            return endpoint(
-                event::init = do_(
-                    std::forward<T>(t).storage[event::init],
-                    std::forward<U>(u).storage[event::init]
-                ),
-                event::read_message = do_(
-                    std::forward<T>(t).storage[event::read_message],
-                    std::forward<U>(u).storage[event::read_message]
-                ),
-                event::write_message = do_(
-                    std::forward<U>(u).storage[event::write_message],
-                    std::forward<T>(t).storage[event::write_message]
-                )
-            );
-        }
-    };
-
-    template <>
-    struct zero_impl<full_duplex::endpoint_tag> {
-        static constexpr auto apply() {
-            using full_duplex::do_;
-            using full_duplex::endpoint;
-            namespace event = full_duplex::event;
-
-            return endpoint(
-                event::init = do_(),
-                event::read_message = do_(),
-                event::write_message = do_()
-            );
-        }
-    };
 }
 
 #endif

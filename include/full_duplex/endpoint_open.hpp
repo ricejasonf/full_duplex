@@ -8,23 +8,30 @@
 #define FULL_DUPLEX_ENDPOINT_OPEN_HPP
 
 #include <full_duplex/detail/endpoint_inst.hpp>
-#include <full_duplex/fwd/endpoint.hpp>
+#include <full_duplex/fwd/endpoint_open.hpp>
 #include <full_duplex/promise.hpp>
 #include <full_duplex/do.hpp>
 
 #include <utility>
 
 namespace full_duplex {
-    template <typename Input, typename SendQueue, typename Endpoint>
-    constexpr auto endpoint_open::operator()(Input&& input,
-                                             SendQueue&& q,
-                                             Endpoint&& e) const
+    template <typename State, typename SendQueue, typename Endpoint>
+    constexpr auto endpoint_open_fn::operator()(State&& state,
+                                                SendQueue&& q,
+                                                Endpoint&& e) const
     {
-        return endpoint_inst<std::decay_t<SendQueue>, std::decay_t<Endpoint>>{
-            std::forward<Input>(input),
+        using AsyncSendQueue = async_queue<std::decay_t<SendQueue>>;
+
+        auto inst = std::make_shared<detail::endpoint_inst<std::decay_t<State>,
+                                                           AsyncSendQueue,
+                                                           std::decay_t<Endpoint>>>(
+            std::forward<State>(state),
             std::forward<SendQueue>(q),
             std::forward<Endpoint>(e)
-        };
+        );
+
+        inst->init();
+        return inst;
     }
 }
 

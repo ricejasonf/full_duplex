@@ -34,10 +34,12 @@ namespace full_duplex::event {
     struct init_t { };
     struct read_message_t { };
     struct write_message_t { };
+    struct error_t { };
 
     constexpr event_t<init_t>           init;
     constexpr event_t<read_message_t>   read_message;
     constexpr event_t<write_message_t>  write_message;
+    constexpr event_t<error_t>          error;
 }
 
 #endif

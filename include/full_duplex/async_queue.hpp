@@ -16,42 +16,11 @@
 #include <boost/hana/map.hpp>
 #include <boost/hana/first.hpp>
 #include <boost/hana/second.hpp>
+#include <cassert>
 #include <utility>
 
 namespace full_duplex {
     namespace hana = boost::hana;
-#if 0 // TODO enable custom events instead of class specialization
-    template <typename Queue, typename Events>
-    template <typename Q, typename E1, typename ...Es>
-    constexpr async_queue<Queue, Events>::async_queue(Q&& q, E1&& e1, Es&& ...es)
-        : queue(std::forward<Q>(q))
-        , events(hana::make_map(std::forward<E1>(e1), std::forward<Es>(es)...))
-    { }
-
-    template <typename Q, typename E1, typename ...Es>
-    async_queue(Q&&, E1&&, E1...)
-        -> async_queue<std::decay_t<Q>, decltype(hana::make_map(std::declval<Es>()...))>;
-
-    template <typename Queue, typename Events>
-    constexpr decltype(auto) async_queue<Queue, Events>::front() {
-        return events[event::send_queue_front];
-    }
-
-    template <typename Queue, typename Events>
-    constexpr decltype(auto) async_queue<Queue, Events>::pop() {
-        return events[event::send_queue_pop];
-    }
-
-    template <typename Queue, typename Events>
-    constexpr decltype(auto) async_queue<Queue, Events>::push() {
-        return events[event::send_queue_push];
-    }
-
-    template <typename Queue, typename Events>
-    constexpr decltype(auto) async_queue<Queue, Events>::size() {
-        return events[event::send_queue_size];
-    }
-#endif
 
     template <typename Q>
     async_queue(Q&&) -> async_queue<std::decay_t<Q>>;
@@ -64,7 +33,10 @@ namespace full_duplex {
 
     template <typename Queue>
     constexpr decltype(auto) async_queue<Queue>::front() {
-        return map([this](auto&&) noexcept { return queue.front(); });
+        return map([this](auto&&) noexcept {
+            assert(queue.size() > 0);
+            return queue.front();
+        });
     }
 
     template <typename Queue>
