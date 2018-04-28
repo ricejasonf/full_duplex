@@ -1,0 +1,27 @@
+{
+  "cppdock": {
+    "name": "full_duplex"
+  },
+  "platforms": [
+    {
+      "type": "linux_x64",
+      "deps": [
+        {
+          "name": "boostorg/callable_traits",
+          "revision": "684dfbd7dfbdd0438ef3670be10002ca33a71715",
+          "tag": "master"
+        },
+        {
+          "name": "boostorg/hana",
+          "tag": "develop",
+          "revision": "7cd10e98bde41a2e197138cb423a6f983a66e645"
+        },
+        {
+          "name": "ricejasonf/quick_project",
+          "tag": "master",
+          "revision": "0307a4c25eea44330d20a42471c2b43530cfe530"
+        }
+      ]
+    }
+  ]
+}
