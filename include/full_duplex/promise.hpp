@@ -42,7 +42,7 @@ namespace full_duplex::detail {
 
             return promise([h{std::move(h)}, this](auto& resolve, auto&&) {
                 run_async(
-                    promise(std::move(h).value),
+                    promise_lift(std::move(h).value),
                     *this,
                     tap(std::ref(resolve))
                 );

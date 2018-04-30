@@ -22,7 +22,7 @@ int main() {
             promise_lift(int{5}),
             promise([](auto& resolve, auto x) { resolve(x * x); })
         ),
-        hana::lift<full_duplex::promise_tag>(int{25})
+        promise_lift(int{25})
     ));
 
     // test using non-overloaded chaining function
@@ -31,7 +31,7 @@ int main() {
             promise_lift(int{5}),
             [](int x) { return promise_lift(x * x); }
         ),
-        hana::lift<full_duplex::promise_tag>(int{25})
+        promise_lift(int{25})
     ));
 
     BOOST_HANA_RUNTIME_CHECK(hana::equal(
@@ -42,6 +42,6 @@ int main() {
             ),
             [](int x) { return promise_lift(x * x); }
         ),
-        hana::lift<full_duplex::promise_tag>(int{25 * 25})
+        promise_lift(int{25 * 25})
     ));
 }
