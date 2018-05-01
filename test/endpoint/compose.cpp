@@ -28,10 +28,10 @@ using full_duplex::promise;
 
 namespace {
     template <int i>
-    constexpr auto push_back = [](std::vector<int>& vec) {
+    constexpr auto push_back = [](auto& self) {
         return map([&](auto&&) {
-            vec.push_back(i);
-            return std::forward<decltype(vec)>(vec);
+            self.state().push_back(i);
+            return full_duplex::void_input;
         });
     };
 

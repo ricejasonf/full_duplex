@@ -30,7 +30,7 @@ namespace full_duplex {
             std::forward<Endpoint>(e)
         );
 
-        inst->init();
+        inst->_init();
         return inst;
     }
 }

@@ -21,7 +21,7 @@ namespace full_duplex::detail {
         endpoint_inst(State_&& state_, Q&& q, E&& e)
             : send_queue(std::forward<Q>(q))
             , endpoint(std::forward<E>(e))
-            , state(std::forward<State_>(state_))
+            , state_(std::forward<State_>(state_))
             , is_started(false)
             , is_stopped(false)
             , is_send_queue_running(false)
@@ -29,12 +29,12 @@ namespace full_duplex::detail {
 
         endpoint_inst(endpoint_inst const&) = delete;
 
-        void init() {
+        void _init() {
             // TODO The running promises could be stored
             // in this struct since its lifetime is tied to it.
             // This would prevent unneccessary allocations.
             run_async(
-                endpoint.init(state),
+                endpoint.init(*this),
                 tap([this](auto&&) {
                     is_started = true;
                     flush_send_queue();
@@ -80,16 +80,18 @@ namespace full_duplex::detail {
                 terminate_if_stopped(),
                 send_queue.front(),
                 terminate_if_stopped(),
-                endpoint.write_message(state),
+                endpoint.write_message(*this),
                 send_queue.pop(),
                 error_catcher()
             );
         }
 
+        auto& state() { return std::ref(state_).get(); }
+
     private:
         AsyncSendQueue send_queue;
         Endpoint endpoint;
-        State state;
+        State state_;
         bool is_started             : 1;
         bool is_stopped             : 1;
         bool is_send_queue_running  : 1;
@@ -97,7 +99,7 @@ namespace full_duplex::detail {
         void keep_reading() {
             run_async_loop(
                 terminate_if_stopped(),
-                endpoint.read_message(state),
+                endpoint.read_message(*this),
                 error_catcher()
             );
         }
@@ -110,7 +112,7 @@ namespace full_duplex::detail {
                 run_async(
                     promise_lift(this->shared_from_this()),
                     promise_lift(std::forward<decltype(error)>(error)),
-                    endpoint.error(state)
+                    endpoint.error(*this)
                 );
             });
         }
