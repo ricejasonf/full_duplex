@@ -121,7 +121,7 @@ namespace full_duplex::detail {
             return promise([this](auto& resolve, auto&& input) {
                 static_assert(not hana::is_a<terminate, decltype(input)>());
                 if (is_stopped) { resolve(terminate{}); }
-                else            { resolve(void_input); }
+                else            { resolve(std::forward<decltype(input)>(input)); }
             });
         }
     };
