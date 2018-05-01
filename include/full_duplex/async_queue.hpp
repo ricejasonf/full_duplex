@@ -33,7 +33,7 @@ namespace full_duplex {
 
     template <typename Queue>
     constexpr decltype(auto) async_queue<Queue>::front() {
-        return map([this](auto&&) noexcept {
+        return map([this](auto&&) noexcept -> decltype(auto) {
             assert(queue.size() > 0);
             return queue.front();
         });
