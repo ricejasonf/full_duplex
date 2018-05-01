@@ -44,7 +44,7 @@ namespace full_duplex {
     template <typename Fn>
     constexpr auto tap_fn::operator()(Fn&& fn) const {
         auto fn_ = hana::capture()(std::forward<Fn>(fn));
-        auto tap_helper = [fn_{std::move(fn_)}](auto&& input) {
+        auto tap_helper = [fn_{std::move(fn_)}](auto&& input) -> decltype(auto) {
             fn_(input);
             return std::forward<decltype(input)>(input);
         };
