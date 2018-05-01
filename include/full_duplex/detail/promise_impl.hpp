@@ -96,7 +96,7 @@ namespace full_duplex::detail {
         Fn fn;
 
         template <typename Input>
-        constexpr auto operator()(Input&& input) const {
+        constexpr decltype(auto) operator()(Input&& input) const {
             return fn(std::forward<Input>(input));
         }
     };
@@ -107,7 +107,7 @@ namespace full_duplex::detail {
         Fn fn;
 
         template <typename Input>
-        constexpr auto operator()(Input&& input) const {
+        constexpr decltype(auto) operator()(Input&& input) const {
             if constexpr(hana::is_a<terminate, Input>) {
                 return terminate{};
             }
@@ -126,7 +126,7 @@ namespace full_duplex::detail {
         Fn fn;
 
         template <typename Input>
-        constexpr auto operator()(Input&& input) const {
+        constexpr decltype(auto) operator()(Input&& input) const {
             if constexpr(hana::is_a<terminate, Input>) {
                 return terminate{};
             }
