@@ -55,7 +55,7 @@ namespace full_duplex::detail {
             std::forward<decltype(fn)>(fn)
         };
 
-        return detail::promise_t<decltype(impl)>{impl};
+        return detail::promise_t<decltype(impl)>{std::move(impl)};
     };
 } 
 
@@ -63,7 +63,7 @@ namespace full_duplex {
     template <typename AsyncFn>
     constexpr auto promise_fn::operator()(AsyncFn&& fn) const {
         auto impl = detail::async_handler<std::decay_t<AsyncFn>>{std::forward<AsyncFn>(fn)};
-        return detail::promise_t<decltype(impl)>{impl};
+        return detail::promise_t<decltype(impl)>{std::move(impl)};
     }
 }
 
