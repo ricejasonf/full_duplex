@@ -4,7 +4,6 @@
 // (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //
-                                                                 #include <iostream>
 #include <full_duplex/endpoint.hpp>
 #include <full_duplex/endpoint_open.hpp>
 #include <full_duplex/promise.hpp>

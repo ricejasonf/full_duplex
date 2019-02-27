@@ -24,6 +24,21 @@ namespace full_duplex {
 
     constexpr run_async_loop_fn run_async_loop{};
 
+    // TODO Remove ugly interface when Concepts arrive
+    struct run_async_with_state_fn {
+        template <typename State, typename ...Xs>
+        constexpr auto operator()(State, Xs&& ...) const;
+    };
+
+    constexpr run_async_with_state_fn run_async_with_state{};
+
+    struct run_async_loop_with_state_fn {
+        template <typename State, typename ...Xs>
+        constexpr auto operator()(State, Xs&& ...) const;
+    };
+
+    constexpr run_async_loop_with_state_fn run_async_loop_with_state{};
+
     // void_input - tag used as placeholder for initial input
 
     struct void_input_t { };

@@ -10,7 +10,6 @@
 #include <utility>
 
 namespace full_duplex {
-
     template <typename Current, typename Next>
     struct _p {
         _p(Current&& c, Next&& n)
@@ -21,6 +20,10 @@ namespace full_duplex {
         template <typename Input>
         void operator()(Input&& input) {
             current(next, std::forward<Input>(input));
+        }
+
+        decltype(auto) get_state() {
+            return next.get_state();
         }
 
     private:
