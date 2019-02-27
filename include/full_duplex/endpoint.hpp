@@ -26,8 +26,15 @@ namespace full_duplex {
     namespace hana = boost::hana;
 
     namespace detail {
-        constexpr auto get_endpoint_event = [](auto key, auto& map) {
-            return hana::find(map, key).value_or([](auto&) { return do_(); });
+        constexpr auto get_endpoint_event = [](auto key, auto& map, auto& input) {
+            auto e = hana::find(map, key).value_or(do_());
+            if constexpr(hana::is_a<promise_tag, decltype(e)>) {
+                return e;
+            } else {
+                // inject fake "self" param
+                // should return a promise
+                return e(input);
+            }
         };
     }
 
@@ -38,28 +45,28 @@ namespace full_duplex {
         template <typename Input>
         constexpr auto init(Input& input) {
             return hana::unpack(storage, [&](auto& ...map) {
-                return do_(detail::get_endpoint_event(event::init, map)(input)...);
+                return do_(detail::get_endpoint_event(event::init, map, input)...);
             });
         }
 
         template <typename Input>
         constexpr auto read_message(Input& input) {
             return hana::unpack(storage, [&](auto& ...map) {
-                return do_(detail::get_endpoint_event(event::read_message, map)(input)...);
+                return do_(detail::get_endpoint_event(event::read_message, map, input)...);
             });
         }
 
         template <typename Input>
         constexpr auto write_message(Input& input) {
             return hana::unpack(hana::reverse(storage), [&](auto ...map) {
-                return do_(detail::get_endpoint_event(event::write_message, map)(input)...);
+                return do_(detail::get_endpoint_event(event::write_message, map, input)...);
             });
         }
 
         template <typename Input>
         constexpr auto error(Input& input) {
             return hana::unpack(storage, [&](auto& ...map) {
-                return do_(detail::get_endpoint_event(event::error, map)(input)...);
+                return do_(detail::get_endpoint_event(event::error, map, input)...);
             });
         }
 

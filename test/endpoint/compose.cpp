@@ -53,21 +53,45 @@ namespace {
             return promise([](auto& resolve, auto&&) { resolve(make_error(42)); });
         }
     );
+
+    constexpr auto term_ep2 = full_duplex::endpoint(
+        full_duplex::event::init          = promise([](auto& r, auto&&) { r(make_error(42)); }),
+        full_duplex::event::read_message  = promise([](auto& r, auto&&) { r(make_error(42)); }),
+        full_duplex::event::write_message = promise([](auto& r, auto&&) { r(make_error(42)); })
+    );
 }
 
 int main() {
-    auto endpoint = endpoint_compose(ep<1>, ep<2>, ep<3>, term_ep);
+    {
+        auto endpoint = endpoint_compose(ep<1>, ep<2>, ep<3>, term_ep);
 
-    std::vector<int> xs{};
+        std::vector<int> xs{};
 
-    endpoint_open(
-        std::ref(xs),
-        std::queue<int>{},
-        endpoint
-    );
+        endpoint_open(
+            std::ref(xs),
+            std::queue<int>{},
+            endpoint
+        );
 
-    BOOST_HANA_RUNTIME_CHECK(hana::equal(
-        xs,
-        std::vector<int>{1, 2, 3}
-    ));
+        BOOST_HANA_RUNTIME_CHECK(hana::equal(
+            xs,
+            std::vector<int>{1, 2, 3}
+        ));
+    }
+    {
+        auto endpoint = endpoint_compose(ep<1>, ep<2>, ep<3>, term_ep2);
+
+        std::vector<int> xs{};
+
+        endpoint_open(
+            std::ref(xs),
+            std::queue<int>{},
+            endpoint
+        );
+
+        BOOST_HANA_RUNTIME_CHECK(hana::equal(
+            xs,
+            std::vector<int>{1, 2, 3}
+        ));
+    }
 }
