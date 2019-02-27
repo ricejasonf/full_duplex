@@ -191,9 +191,9 @@ namespace full_duplex::detail {
             void* ptr = std::malloc(sizeof(Joined));
 
             if (ptr == nullptr) {
-                throw std::runtime_error("malloc failed");
+                std::abort();
                 // Could possibly handle this but it complicates the Laws tests
-                //resolve(make_error(std::runtime_error("malloc failed")));
+                // resolve(make_error(std::runtime_error("malloc failed")));
             }
             else {
                 new(ptr) Joined(PromiseJoinFn{}(this->fn(input), std::ref(resolve)));
