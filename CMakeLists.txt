@@ -4,11 +4,12 @@ list(APPEND CMAKE_MODULE_PATH /usr/local/cmake) # ??
 project(full_duplex_project)
 enable_testing()
 
-include(quick_project/Test)
+include(quick_project/Test OPTIONAL RESULT_VARIABLE quick_project)
+if (quick_project)
+  quick_project_add_check_target()
+endif(quick_project)
 
-quick_project_add_check_target()
-
-add_definitions(-std=c++1z)
+add_definitions(-std=c++2a)
 add_definitions(-DBOOST_HANA_CONFIG_ENABLE_STRING_UDL)
 add_definitions(-ftemplate-backtrace-limit=0)
 add_definitions(-Wall)
@@ -20,4 +21,6 @@ include_directories(${full_duplex_project_SOURCE_DIR}/include)
 install(FILES include/full_duplex.hpp DESTINATION include)
 install(DIRECTORY include/full_duplex DESTINATION include)
 
-add_subdirectory(test)
+if (quick_project)
+  add_subdirectory(test)
+endif(quick_project)
