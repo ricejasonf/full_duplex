@@ -30,11 +30,37 @@ namespace full_duplex {
         Current current;
         Next next;
     };
+
+    // composed function where Current is just
+    // a function that returns a value
+    template <typename Current, typename Next>
+    struct _pc {
+        _pc(Current&& c, Next&& n)
+            : current(std::move(c))
+            , next(std::move(n))
+        { }
+
+        template <typename Input>
+        void operator()(Input&& input) {
+            next(current(std::forward<Input>(input)));
+        }
+
+        decltype(auto) get_state() {
+            return next.get_state();
+        }
+
+    private:
+        Current current;
+        Next next;
+    };
 }
 
 namespace full_duplex::detail {
     template <typename Current, typename Next>
     using final_promise = _p<Current, Next>;
+
+    template <typename Current, typename Next>
+    using final_promise_compose = _pc<Current, Next>;
 }
 
 #endif

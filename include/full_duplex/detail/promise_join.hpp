@@ -11,7 +11,6 @@
 
 #include <boost/hana/core/is_a.hpp>
 #include <boost/hana/fold_right.hpp>
-#include <boost/hana/functional/compose.hpp>
 #include <utility>
 
 namespace full_duplex::detail {
@@ -59,9 +58,9 @@ namespace full_duplex::detail {
             );
         }
         else if constexpr(hana::is_a<pmap_tag, Impl>) {
-            return hana::compose(
-                std::forward<Next>(next),
-                std::forward<Current>(current)
+            return final_promise_compose<std::decay_t<Current>, std::decay_t<Next>>(
+                std::forward<Current>(current),
+                std::forward<Next>(next)
             );
         }
 #if 0 // no future!

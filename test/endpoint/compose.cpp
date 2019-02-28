@@ -27,12 +27,10 @@ using full_duplex::promise;
 
 namespace {
     template <int i>
-    constexpr auto push_back = [](auto& self) {
-        return map([&](auto&&) {
-            self.state().push_back(i);
-            return full_duplex::void_input;
-        });
-    };
+    constexpr auto push_back = promise([](auto& resolve, auto&&) {
+        resolve.get_state().push_back(i);
+        resolve(full_duplex::void_input);
+    });
 
     template <int i>
     constexpr auto ep = full_duplex::endpoint(
