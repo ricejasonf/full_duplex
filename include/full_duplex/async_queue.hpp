@@ -46,9 +46,13 @@ namespace full_duplex {
 
     template <typename Queue>
     constexpr decltype(auto) async_queue<Queue>::push() {
-        return map([this](auto&& input) noexcept {
-            queue.push(std::forward<decltype(input)>(input));
-            return void_input;
+        return promise([this](auto& resolve, auto&& input) noexcept {
+            if (queue.size() >= max_size()) {
+                resolve(make_error(queue_full));
+            } else {
+                queue.push(std::forward<decltype(input)>(input));
+                resolve(void_input);
+            }
         });
     }
 
