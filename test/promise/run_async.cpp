@@ -73,7 +73,7 @@ int main() {
         BOOST_HANA_RUNTIME_CHECK(state == 42);
     }
 
-    // run_async_loop
+    // run_async_loop_with_state
     {
         std::array<int, 7> xs{};
         int state = 35;
@@ -90,5 +90,16 @@ int main() {
 
         BOOST_HANA_RUNTIME_CHECK(hana::equal(xs, std::array<int, 7>{{1, 2, 3, 4, 5, 6, 7}}));
         BOOST_HANA_RUNTIME_CHECK(state == 42);
+    }
+
+    // run_async_with_state move only state
+    {
+        run_async_with_state(std::make_unique<int>());
+
+        // the loop must terminate
+        run_async_loop_with_state(
+            std::make_unique<int>(),
+            full_duplex::map([](auto&&) { return full_duplex::terminate{}; })
+        );
     }
 }

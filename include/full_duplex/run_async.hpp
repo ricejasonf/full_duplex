@@ -20,7 +20,7 @@ namespace full_duplex::detail {
     template <typename State>
     struct state_base {
       State state;
-      state_base(State state) : state(state) { }
+      state_base(State state) : state(std::move(state)) { }
       auto& get_state() { return std::ref(state).get(); }
     };
 
@@ -37,7 +37,7 @@ namespace full_duplex::detail {
         Holder* holder;
 
         promise_tail(Holder* e, State state)
-            : state_base<State>(state)
+            : state_base<State>(std::move(state))
             , holder(e)
         { }
 
@@ -55,7 +55,7 @@ namespace full_duplex::detail {
         Holder* holder;
 
         promise_loop_tail(Holder* e, State state)
-            : state_base<State>(state)
+            : state_base<State>(std::move(state))
             , holder(e)
         { }
 
@@ -85,7 +85,9 @@ namespace full_duplex::detail {
         PromiseSum promise_sum;
 
         promise_sum_holder(PromiseImpl&& p, State state)
-            : promise_sum(promise_join(std::move(p), Tail<promise_sum_holder, State>(this, state)))
+            : promise_sum(promise_join(
+                std::move(p), Tail<promise_sum_holder, State>(
+                  this, std::move(state))))
         { }
 
         promise_sum_holder(promise_sum_holder const&) = delete;
@@ -101,7 +103,7 @@ namespace full_duplex {
     constexpr auto run_async_with_state_fn::operator()(State state, Xs&& ...xs) const {
         using Impl = decltype(hana::make_basic_tuple(std::forward<Xs&&>(xs)...));
         auto p = new detail::promise_sum_holder<Impl, detail::promise_tail, State>{
-            hana::make_basic_tuple(std::forward<Xs&&>(xs)...), state};
+            hana::make_basic_tuple(std::forward<Xs&&>(xs)...), std::move(state)};
 
         p->invoke();
     }
@@ -110,7 +112,7 @@ namespace full_duplex {
     constexpr auto run_async_loop_with_state_fn::operator()(State state, Xs&&... xs) const {
         using Impl = decltype(hana::make_basic_tuple(std::forward<Xs&&>(xs)...));
         auto p = new detail::promise_sum_holder<Impl, detail::promise_loop_tail, State>{
-            hana::make_basic_tuple(std::forward<Xs&&>(xs)...), state};
+            hana::make_basic_tuple(std::forward<Xs&&>(xs)...), std::move(state)};
 
         p->invoke();
     }
