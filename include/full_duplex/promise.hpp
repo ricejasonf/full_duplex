@@ -49,14 +49,6 @@ namespace full_duplex::detail {
             });
         }
     };
-
-    constexpr auto promise_any = [](auto&& fn) {
-        auto impl = detail::async_raw_handler<std::decay_t<decltype(fn)>>{
-            std::forward<decltype(fn)>(fn)
-        };
-
-        return detail::promise_t<decltype(impl)>{std::move(impl)};
-    };
 } 
 
 namespace full_duplex {
@@ -65,6 +57,14 @@ namespace full_duplex {
         auto impl = detail::async_handler<std::decay_t<AsyncFn>>{std::forward<AsyncFn>(fn)};
         return detail::promise_t<decltype(impl)>{std::move(impl)};
     }
+
+    constexpr auto promise_any = [](auto&& fn) {
+        auto impl = detail::async_raw_handler<std::decay_t<decltype(fn)>>{
+            std::forward<decltype(fn)>(fn)
+        };
+
+        return detail::promise_t<decltype(impl)>{std::move(impl)};
+    };
 }
 
 namespace boost::hana
@@ -137,7 +137,7 @@ namespace boost::hana
         template <typename Px, typename Py>
         static bool apply(Px const& px, Py const& py) {
             using full_duplex::detail::promise_join;
-            using full_duplex::detail::promise_any;
+            using full_duplex::promise_any;
             using full_duplex::terminate;
             using full_duplex::void_input;
 
