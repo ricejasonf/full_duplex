@@ -24,6 +24,7 @@ using full_duplex::endpoint_open;
 using full_duplex::make_error;
 using full_duplex::map;
 using full_duplex::promise;
+using full_duplex::tap;
 
 namespace {
     template <int i>
@@ -34,28 +35,41 @@ namespace {
 
     template <int i>
     constexpr auto ep = full_duplex::endpoint(
-        full_duplex::event::init          = push_back<i>,
-        full_duplex::event::read_message  = push_back<i>,
-        full_duplex::event::write_message = push_back<i> 
+        event::init          = push_back<i>,
+        event::read_message  = push_back<i>,
+        event::write_message = push_back<i>
     );
 
     constexpr auto term_ep = full_duplex::endpoint(
-        full_duplex::event::init          = [](auto&) {
+        event::init          = [](auto&) {
             return promise([](auto& resolve, auto&&) { resolve(make_error(42)); });
         },
-        full_duplex::event::read_message  = [](auto&) { 
+        event::read_message  = [](auto&) {
             return promise([](auto& resolve, auto&&) { resolve(make_error(42)); });
         },
-        full_duplex::event::write_message = [](auto&) {
+        event::write_message = [](auto&) {
             return promise([](auto& resolve, auto&&) { resolve(make_error(42)); });
         }
     );
 
     constexpr auto term_ep2 = full_duplex::endpoint(
-        full_duplex::event::init          = promise([](auto& r, auto&&) { r(make_error(42)); }),
-        full_duplex::event::read_message  = promise([](auto& r, auto&&) { r(make_error(42)); }),
-        full_duplex::event::write_message = promise([](auto& r, auto&&) { r(make_error(42)); })
+        event::init          = promise([](auto& r, auto&&) { r(make_error(42)); }),
+        event::read_message  = promise([](auto& r, auto&&) { r(make_error(42)); }),
+        event::write_message = promise([](auto& r, auto&&) { r(make_error(42)); })
     );
+
+    constexpr auto term_ep3 = endpoint(
+        event::init = map([](auto&&) { return full_duplex::terminate{}; })
+    );
+
+    constexpr auto check_ep = [](int& error_count, int& terminate_count) {
+        return full_duplex::endpoint(
+            event::error     = tap([&](auto&&) { error_count++; }),
+            event::terminate = tap([&](auto&&) { terminate_count++; })
+        );
+    };
+
+
 }
 
 int main() {
@@ -90,5 +104,45 @@ int main() {
             xs,
             std::vector<int>{1, 2, 3}
         ));
+    }
+    {
+        // terminate called after error
+
+        int error_count     = 0;
+        int terminate_count = 0;
+
+        auto ep3      = check_ep(error_count, terminate_count);
+        auto endpoint = endpoint_compose(term_ep2, ep3);
+
+        std::vector<int> xs{};
+
+        endpoint_open(
+            std::ref(xs),
+            std::queue<int>{},
+            endpoint
+        );
+
+        BOOST_HANA_RUNTIME_CHECK(error_count == 1);
+
+        BOOST_HANA_RUNTIME_CHECK(terminate_count == 1);
+    }
+    {
+        // terminate but no error
+        int error_count     = 0;
+        int terminate_count = 0;
+
+        auto ep_      = check_ep(error_count, terminate_count);
+        auto endpoint = endpoint_compose(term_ep3, ep_);
+
+        std::vector<int> xs{};
+
+        endpoint_open(
+            std::ref(xs),
+            std::queue<int>{},
+            endpoint
+        );
+
+        BOOST_HANA_RUNTIME_CHECK(error_count == 0);
+        BOOST_HANA_RUNTIME_CHECK(terminate_count == 1);
     }
 }

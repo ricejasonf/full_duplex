@@ -45,28 +45,40 @@ namespace full_duplex {
         template <typename Input>
         constexpr auto init(Input& input) {
             return hana::unpack(storage, [&](auto& ...map) {
-                return do_(detail::get_endpoint_event(event::init, map, input)...);
+                return do_(detail::get_endpoint_event(event::init,
+                                                      map, input)...);
             });
         }
 
         template <typename Input>
         constexpr auto read_message(Input& input) {
             return hana::unpack(storage, [&](auto& ...map) {
-                return do_(detail::get_endpoint_event(event::read_message, map, input)...);
+                return do_(detail::get_endpoint_event(event::read_message,
+                                                      map, input)...);
             });
         }
 
         template <typename Input>
         constexpr auto write_message(Input& input) {
             return hana::unpack(hana::reverse(storage), [&](auto ...map) {
-                return do_(detail::get_endpoint_event(event::write_message, map, input)...);
+                return do_(detail::get_endpoint_event(event::write_message,
+                                                      map, input)...);
             });
         }
 
         template <typename Input>
         constexpr auto error(Input& input) {
             return hana::unpack(storage, [&](auto& ...map) {
-                return do_(detail::get_endpoint_event(event::error, map, input)...);
+                return do_(detail::get_endpoint_event(event::error, map,
+                                                      input)...);
+            });
+        }
+
+        template <typename Input>
+        constexpr auto handle_terminate(Input& input) {
+            return hana::unpack(storage, [&](auto& ...map) {
+                return do_(detail::get_endpoint_event(event::terminate,
+                                                      map, input)...);
             });
         }
 

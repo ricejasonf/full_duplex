@@ -35,11 +35,13 @@ namespace full_duplex::event {
     struct read_message_t { };
     struct write_message_t { };
     struct error_t { };
+    struct terminate_t { };
 
     constexpr event_t<init_t>           init;
     constexpr event_t<read_message_t>   read_message;
     constexpr event_t<write_message_t>  write_message;
     constexpr event_t<error_t>          error;
+    constexpr event_t<terminate_t>      terminate;
 }
 
 #endif

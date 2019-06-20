@@ -41,7 +41,8 @@ namespace full_duplex::detail {
                     flush_send_queue();
                     keep_reading();
                 }),
-                error_catcher()
+                error_catcher(),
+                check_terminate()
             );
         }
 
@@ -52,7 +53,8 @@ namespace full_duplex::detail {
                 promise_lift(std::forward<Message>(m)),
                 send_queue.push(),
                 tap([this](void_input_t) { flush_send_queue(); }),
-                error_catcher()
+                error_catcher(),
+                check_terminate()
             );
         }
 
@@ -104,7 +106,8 @@ namespace full_duplex::detail {
                 state_,
                 terminate_if_stopped(),
                 endpoint.read_message(*this),
-                error_catcher()
+                error_catcher(),
+                check_terminate()
             );
         }
 
@@ -117,7 +120,8 @@ namespace full_duplex::detail {
                     state_,
                     promise_lift(this->shared_from_this()),
                     promise_lift(std::forward<decltype(error)>(error)),
-                    endpoint.error(*this)
+                    endpoint.error(*this),
+                    endpoint.handle_terminate(*this)
                 );
             });
         }
@@ -129,6 +133,22 @@ namespace full_duplex::detail {
                 else            { resolve(std::forward<decltype(input)>(input)); }
             });
         }
+
+        auto check_terminate() {
+            return map_any([this](auto&& input) {
+                if constexpr(hana::is_a<terminate, decltype(input)>()) {
+                  // this only runs if it terminates without an error
+                  if (!is_stopped) {
+                    run_async_with_state(
+                      state_,
+                      endpoint.handle_terminate(*this)
+                    );
+                  }
+                }
+                return std::forward<decltype(input)>(input);
+            });
+        }
+
     };
 }
 
