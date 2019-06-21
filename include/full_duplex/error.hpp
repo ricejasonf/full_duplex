@@ -10,6 +10,7 @@
 #include <full_duplex/fwd/error.hpp>
 
 #include <boost/hana/bool.hpp>
+#include <boost/hana/core/is_a.hpp>
 #include <boost/hana/fwd/equal.hpp>
 #include <utility>
 
@@ -31,6 +32,12 @@ namespace full_duplex {
     constexpr auto make_error_fn::operator()(T&& t) const {
         return error<std::decay_t<T>>{{std::forward<T>(t)}};
     };
+
+    template <typename T>
+    constexpr auto is_error = boost::hana::is_a<error_tag, T>;
+
+    template <typename T>
+    constexpr auto is_terminate = boost::hana::is_a<terminate, T>;
 }
 
 namespace boost::hana {
