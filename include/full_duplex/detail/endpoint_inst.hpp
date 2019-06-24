@@ -34,7 +34,7 @@ namespace full_duplex::detail {
             // in this struct since its lifetime is tied to it.
             // This would prevent unneccessary allocations.
             run_async_with_state(
-                state_,
+                std::ref(state_),
                 endpoint.init(*this),
                 tap([this](auto&&) {
                     is_started = true;
@@ -49,7 +49,7 @@ namespace full_duplex::detail {
         template <typename Message>
         void send_message(Message&& m) {
             run_async_with_state(
-                state_,
+                std::ref(state_),
                 promise_lift(std::forward<Message>(m)),
                 send_queue.push(),
                 tap([this](void_input_t) { flush_send_queue(); }),
@@ -80,7 +80,7 @@ namespace full_duplex::detail {
             );
 
             run_async_loop_with_state(
-                state_,
+                std::ref(state_),
                 terminate_if_done,
                 terminate_if_stopped(),
                 send_queue.front(),
@@ -103,7 +103,7 @@ namespace full_duplex::detail {
 
         void keep_reading() {
             run_async_loop_with_state(
-                state_,
+                std::ref(state_),
                 terminate_if_stopped(),
                 endpoint.read_message(*this),
                 error_catcher(),
@@ -117,7 +117,7 @@ namespace full_duplex::detail {
                 if (is_stopped) return;
                 is_stopped = true;
                 run_async_with_state(
-                    state_,
+                    std::ref(state_),
                     promise_lift(this->shared_from_this()),
                     promise_lift(std::forward<decltype(error)>(error)),
                     endpoint.error(*this),
@@ -140,7 +140,7 @@ namespace full_duplex::detail {
                   // this only runs if it terminates without an error
                   if (!is_stopped) {
                     run_async_with_state(
-                      state_,
+                      std::ref(state_),
                       endpoint.handle_terminate(*this)
                     );
                   }
