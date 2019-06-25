@@ -28,7 +28,7 @@ namespace full_duplex::detail {
         AsyncFn fn;
 
         template <typename ResolveFn, typename Input>
-        constexpr void operator()(ResolveFn&& resolve, Input&& input) const {
+        constexpr void operator()(ResolveFn&& resolve, Input&& input) {
             fn(std::forward<ResolveFn>(resolve), std::forward<Input>(input));
         }
     };
@@ -107,7 +107,7 @@ namespace full_duplex::detail {
         Fn fn;
 
         template <typename Input>
-        constexpr decltype(auto) operator()(Input&& input) const {
+        constexpr decltype(auto) operator()(Input&& input) {
             if constexpr(hana::is_a<terminate, Input>) {
                 return terminate{};
             }
@@ -126,7 +126,7 @@ namespace full_duplex::detail {
         Fn fn;
 
         template <typename Input>
-        constexpr decltype(auto) operator()(Input&& input) const {
+        constexpr decltype(auto) operator()(Input&& input) {
             if constexpr(hana::is_a<terminate, Input>) {
                 return terminate{};
             }
@@ -145,7 +145,7 @@ namespace full_duplex::detail {
         Fn fn;
 
         template <typename Input>
-        constexpr decltype(auto) operator()(Input&& input) const {
+        constexpr decltype(auto) operator()(Input&& input) {
             // uses libc++ impl details FIXME
             if constexpr(hana::is_a<error_tag, Input>) {
                 if constexpr(std::__invokable<Fn, typename std::decay_t<Input>::value_type>::value) {

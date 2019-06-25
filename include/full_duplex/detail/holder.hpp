@@ -143,7 +143,7 @@ namespace full_duplex::detail {
         bool is_engaged()
         { return engaged; }
 
-        T const& force_get()
+        T& force_get()
         { return value; }
 
     protected:

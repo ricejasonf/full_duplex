@@ -7,11 +7,16 @@
 #ifndef FULL_DUPLEX_FWD_FUTURE_HPP
 #define FULL_DUPLEX_FWD_FUTURE_HPP
 
-namespace full_duplex {
-    struct future_tag { }
+#include <boost/hana/functional/id.hpp>
 
-    template <typename T, typename ...>
+namespace full_duplex {
+    struct future_tag { };
+
+    template <typename T, typename Transform = boost::hana::id_t>
     struct future_t;
+
+    template <typename T>
+    constexpr auto future = []() -> future_t<T> { return {}; };
 
     template <typename T, typename ...>
     struct shared_future_t;

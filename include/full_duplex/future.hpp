@@ -21,18 +21,29 @@ namespace full_duplex::detail {
 }
 
 namespace full_duplex {
-    template <typename T, typename Transform = hana::id_t>
-    struct future_t<T, Transform>
-        : future_transform_function<Transform>
+    template <typename T, typename Transform>
+    struct future_t
+        : detail::future_transform_function<Transform>
     {
         using hana_tag = future_tag;
         using type = T;
-        lazy_holder<T> storage;
+        detail::lazy_holder<T> storage;
 
+        future_t() = default;
+
+        template <typename Holder, typename TransformArg>
         future_t(Holder&& h, TransformArg&& t)
-            : future_transform_function<Transform>(std::forward<TransformArg>(t))
+            : detail::future_transform_function<Transform>(
+                std::forward<TransformArg>(t))
             , storage(std::forward<Holder>(h))
         { }
+
+        // for use with promises via `map(future<T>)`
+        template <typename X>
+        T& operator()(X&& x) {
+            storage.assign(std::forward<X>(x));
+            return this->fn(storage.force_get());
+        }
     };
 }
 
@@ -47,7 +58,7 @@ namespace boost::hana
         template <typename X>
         static constexpr decltype(auto) apply(X&& x) {
             if (x.storage.is_engaged()) {
-                return x.fn(x.force_get());
+                return x.fn(x.storage.force_get());
             }
             else {
                 return x.fn(full_duplex::unresolved);
@@ -63,7 +74,7 @@ namespace boost::hana
         static constexpr auto apply(F&& f, Fn&& fn) {
             using T = typename std::decay_t<F>::type;
             auto new_fn = hana::compose(std::forward<Fn>(fn), std::forward<F>(f).fn);
-            return future_t<T, decltype(new_fn)>(
+            return full_duplex::future_t<T, decltype(new_fn)>(
                 std::forward<F>(f).storage,
                 std::move(new_fn)
             );
