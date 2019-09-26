@@ -42,7 +42,7 @@ namespace {
 
     constexpr auto term_ep = full_duplex::endpoint(
         event::init          = [](auto&) {
-            return promise([](auto& resolve, auto&&) { resolve(make_error(42)); });
+            return promise([](auto& resolve, auto&&) { resolve(make_error("42")); });
         },
         event::read_message  = [](auto&) {
             return promise([](auto& resolve, auto&&) { resolve(make_error(42)); });

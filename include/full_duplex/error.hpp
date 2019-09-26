@@ -14,23 +14,19 @@
 #include <boost/hana/fwd/equal.hpp>
 #include <utility>
 
-namespace full_duplex::detail {
+namespace full_duplex {
     template <typename T>
-    struct error_value {
+    struct error {
         using hana_tag = error_tag;
         using value_type = T;
 
         T value;
     };
-}
-
-namespace full_duplex {
-    template <typename T>
-    struct error<T> : detail::error_value<T> { };
 
     template <typename T>
     constexpr auto make_error_fn::operator()(T&& t) const {
-        return error<std::decay_t<T>>{{std::forward<T>(t)}};
+        // requires copyable<T>
+        return error<std::decay_t<T>>{t};
     };
 
     template <typename T>

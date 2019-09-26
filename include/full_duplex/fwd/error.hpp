@@ -14,7 +14,7 @@ namespace full_duplex {
 
     struct error_tag { };
 
-    template <typename T, typename = void>
+    template <typename T>
     struct error;
 
     struct make_error_fn {

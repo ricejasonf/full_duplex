@@ -135,7 +135,7 @@ namespace full_duplex::detail {
         }
 
         auto check_terminate() {
-            return map_any([this](auto&& input) {
+            return map_any([this](auto&& input) -> decltype(auto) {
                 if constexpr(hana::is_a<terminate, decltype(input)>()) {
                   // this only runs if it terminates without an error
                   if (!is_stopped) {
