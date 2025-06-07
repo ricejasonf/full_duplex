@@ -9,7 +9,7 @@ if (quick_project)
   quick_project_add_check_target()
 endif(quick_project)
 
-add_definitions(-std=c++2a)
+add_definitions(-std=c++23)
 add_definitions(-DBOOST_HANA_CONFIG_ENABLE_STRING_UDL)
 add_definitions(-ftemplate-backtrace-limit=0)
 add_definitions(-Wall)

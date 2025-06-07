@@ -11,6 +11,7 @@
 #include <full_duplex/error.hpp>
 
 #include <boost/hana/core/is_a.hpp>
+#include <concepts>
 #include <utility>
 
 namespace full_duplex::detail {
@@ -148,7 +149,8 @@ namespace full_duplex::detail {
         constexpr decltype(auto) operator()(Input&& input) {
             // uses libc++ impl details FIXME
             if constexpr(hana::is_a<error_tag, Input>) {
-                if constexpr(std::__invokable<Fn, typename std::decay_t<Input>::value_type>::value) {
+                if constexpr(std::invocable<Fn,
+                              typename std::decay_t<Input>::value_type>) {
                     fn(std::forward<Input>(input).value);
                     return terminate{};
                 }

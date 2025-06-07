@@ -5,20 +5,14 @@
   "platforms": {
     "develop": {
       "type": "linux_x64",
-      "base_image": "ricejasonf/parmexpr",
+      "base_image": "ricejasonf/cppdock:linux_x64",
       "deps": [
         [
           {
-            "name": "boostorg/callable_traits",
-            "revision": "684dfbd7dfbdd0438ef3670be10002ca33a71715",
-            "tag": "master"
-          }
-        ],
-        [
-          {
-            "name": "boostorg/hana",
-            "tag": "develop",
-            "revision": "7cd10e98bde41a2e197138cb423a6f983a66e645"
+            "name": "ricejasonf/boost",
+            "tag": "1_85_0",
+            "source": "docker",
+            "revision": "sha256:cebcb149011ed4a0bf7a8c38c43976d525545a527204e932ffc3019fe0594ffc"
           }
         ],
         [

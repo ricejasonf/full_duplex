@@ -12,6 +12,7 @@
 #include <boost/hana/functional/overload.hpp>
 #include <boost/hana/equal.hpp>
 #include <boost/hana/transform.hpp>
+#include <cassert>
 #include <type_traits>
 
 namespace hana = boost::hana;
